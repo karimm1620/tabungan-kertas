@@ -1,98 +1,114 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { radius, spacing } from '../../src/theme/colors';
+import { useTheme } from '../../src/theme/ThemeContext';
+import { formatIDR } from '../../src/utils/currency';
+import { useGoalsStore } from '../../src/store/useGoalsStore';
+import { GoalCard } from '../../src/components/GoalCard';
+import { GlassCard } from '../../src/components/GlassCard';
+import { EmptyState } from '../../src/components/EmptyState';
+import type { Goal } from '../../src/types';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function GoalsScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { colors, typography } = useTheme();
+  const goals = useGoalsStore((state) => state.goals);
+  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
 
-export default function HomeScreen() {
+  const totalSaved = useMemo(() => goals.reduce((sum, g) => sum + g.currentAmount, 0), [goals]);
+  const totalTarget = useMemo(() => goals.reduce((sum, g) => sum + g.targetAmount, 0), [goals]);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
+      <View style={styles.header}>
+        <View>
+          <Text style={typography.caption}>Total tabungan</Text>
+          <Text style={styles.headerTitle}>Tabungan-ku</Text>
+        </View>
+        <Pressable
+          onPress={() => router.push('/goal/add')}
+          style={styles.addButton}
+          hitSlop={8}
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </Pressable>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <GlassCard tintColor={colors.glassTintAccent} style={styles.summaryCard}>
+        <Text style={styles.summaryAmount}>{formatIDR(totalSaved)}</Text>
+        <Text style={styles.summaryTarget}>
+          dari total target {formatIDR(totalTarget)} • {goals.length} goal
+        </Text>
+      </GlassCard>
+
+      <FlatList<Goal>
+        data={goals}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <GoalCard goal={item} onPress={() => router.push(`/goal/${item.id}`)} />
+        )}
+        ListEmptyComponent={
+          <EmptyState
+            emoji="🫙"
+            title="Belum ada goal tabungan"
+            description="Tap tombol + di pojok atas buat mulai nabung untuk wishlist pertamamu."
+          />
+        }
+      />
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+function createStyles(colors: ReturnType<typeof useTheme>['colors'], typography: ReturnType<typeof useTheme>['typography']) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: spacing.lg,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    headerTitle: {
+      ...typography.display,
+      fontSize: 28,
+      marginTop: 2,
+    },
+    addButton: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: colors.lavenderDeep,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    addButtonText: {
+      color: colors.textInverse,
+      fontSize: 24,
+      fontWeight: '600',
+      marginTop: -2,
+    },
+    summaryCard: {
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    summaryAmount: {
+      ...typography.display,
+    },
+    summaryTarget: {
+      ...typography.caption,
+      marginTop: spacing.xs,
+    },
+    listContent: {
+      paddingBottom: spacing.xxl,
+    },
+  });
+}
