@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { spacing } from '../theme/colors';
-import { useTheme } from '../theme/ThemeContext';
+import React, { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { spacing } from "../theme/colors";
+import { useTheme } from "../theme/useTheme";
 
 interface EmptyStateProps {
   emoji: string;
@@ -22,11 +22,11 @@ export function EmptyState({ emoji, title, description }: EmptyStateProps) {
   );
 }
 
-function createStyles(typography: ReturnType<typeof useTheme>['typography']) {
+function createStyles(typography: ReturnType<typeof useTheme>["typography"]) {
   return StyleSheet.create({
     container: {
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
       paddingVertical: spacing.xxl,
       paddingHorizontal: spacing.xl,
     },
@@ -36,11 +36,11 @@ function createStyles(typography: ReturnType<typeof useTheme>['typography']) {
     },
     title: {
       ...typography.subtitle,
-      textAlign: 'center',
+      textAlign: "center",
     },
     description: {
       ...typography.caption,
-      textAlign: 'center',
+      textAlign: "center",
       marginTop: spacing.xs,
     },
   });

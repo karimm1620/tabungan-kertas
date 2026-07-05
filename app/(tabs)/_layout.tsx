@@ -1,40 +1,34 @@
-import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
-import { useTheme } from '../../src/theme/ThemeContext';
-
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
-  return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>;
-}
+import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MARGIN,
+  FloatingTabBar,
+} from "../../src/components/FloatingTabBar";
+import { UndoSnackbar } from "../../src/components/UndoSnackbar";
+import { spacing } from "../../src/theme/colors";
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.textPrimary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.glassBorder,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Goals',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🎯" focused={focused} />,
-        }}
+    <>
+      <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
+      >
+        <Tabs.Screen name="index" options={{ title: "Goals" }} />
+        <Tabs.Screen name="history" options={{ title: "History" }} />
+      </Tabs>
+
+      <UndoSnackbar
+        bottomOffset={
+          insets.bottom +
+          FLOATING_TAB_BAR_MARGIN +
+          FLOATING_TAB_BAR_HEIGHT +
+          spacing.sm
+        }
       />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: 'History',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📜" focused={focused} />,
-        }}
-      />
-    </Tabs>
+    </>
   );
 }

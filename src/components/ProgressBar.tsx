@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, View } from "react-native";
+import { useTheme } from "../theme/useTheme";
 
 interface ProgressBarProps {
   percent: number; // 0..1
@@ -9,7 +9,12 @@ interface ProgressBarProps {
   trackColor?: string;
 }
 
-export function ProgressBar({ percent, accentColor, height = 10, trackColor }: ProgressBarProps) {
+export function ProgressBar({
+  percent,
+  accentColor,
+  height = 10,
+  trackColor,
+}: ProgressBarProps) {
   const { colors } = useTheme();
   const widthAnim = useRef(new Animated.Value(0)).current;
 
@@ -19,13 +24,17 @@ export function ProgressBar({ percent, accentColor, height = 10, trackColor }: P
       duration: 500,
       useNativeDriver: false,
     }).start();
-  }, [percent]);
+  }, [percent, widthAnim]);
 
   return (
     <View
       style={[
         styles.track,
-        { height, borderRadius: height / 2, backgroundColor: trackColor ?? colors.glassBorder },
+        {
+          height,
+          borderRadius: height / 2,
+          backgroundColor: trackColor ?? colors.glassBorder,
+        },
       ]}
     >
       <Animated.View
@@ -37,7 +46,7 @@ export function ProgressBar({ percent, accentColor, height = 10, trackColor }: P
             backgroundColor: accentColor,
             width: widthAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: ['0%', '100%'],
+              outputRange: ["0%", "100%"],
             }),
           },
         ]}
@@ -48,11 +57,11 @@ export function ProgressBar({ percent, accentColor, height = 10, trackColor }: P
 
 const styles = StyleSheet.create({
   track: {
-    width: '100%',
-    overflow: 'hidden',
+    width: "100%",
+    overflow: "hidden",
   },
   fill: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
   },

@@ -6,16 +6,28 @@ import { generateId } from '../utils/id';
 import { deleteGoalImage } from '../utils/imageStorage';
 import type { CreateGoalInput, Goal, Transaction } from '../types';
 
+interface PendingDeletion {
+  goal: Goal;
+  transactions: Transaction[];
+}
+
 interface GoalsState {
   goals: Goal[];
   transactions: Transaction[];
+  /** true setelah data selesai di-load dari AsyncStorage saat app start */
+  hasHydrated: boolean;
+  /** Goal yang baru dihapus tapi masih dalam jendela waktu "undo" */
+  pendingDeletion: PendingDeletion | null;
 
   // Actions
   addGoal: (input: CreateGoalInput) => Goal;
   updateGoal: (id: string, patch: Partial<CreateGoalInput>) => void;
   deleteGoal: (id: string) => void;
+  undoDelete: () => void;
+  commitPendingDeletion: () => void;
   deposit: (goalId: string, amount: number, note?: string) => void;
   withdraw: (goalId: string, amount: number, note?: string) => { ok: boolean; error?: string };
+  setHasHydrated: (value: boolean) => void;
 
   // Selectors (dipanggil sebagai fungsi biasa, bukan reactive — pakai hook terpisah kalau perlu reactive)
   getGoalById: (id: string) => Goal | undefined;
@@ -26,6 +38,10 @@ export const useGoalsStore = create<GoalsState>()(
     (set, get) => ({
       goals: [],
       transactions: [],
+      hasHydrated: false,
+      pendingDeletion: null,
+
+      setHasHydrated: (value) => set({ hasHydrated: value }),
 
       addGoal: (input) => {
         const id = generateId('goal');
@@ -62,13 +78,42 @@ export const useGoalsStore = create<GoalsState>()(
         }));
       },
 
+      // Soft-delete: goal langsung hilang dari list, tapi datanya (+ history-nya)
+      // disimpan sementara di `pendingDeletion` supaya bisa di-undo. Gambar file-nya
+      // BELUM dihapus di sini — baru benar-benar dihapus lewat commitPendingDeletion()
       deleteGoal: (id) => {
+        const existingPending = get().pendingDeletion;
+        if (existingPending?.goal.imageUri) {
+          deleteGoalImage(existingPending.goal.imageUri);
+        }
+
         const goal = get().goals.find((g) => g.id === id);
-        if (goal?.imageUri) deleteGoalImage(goal.imageUri);
+        if (!goal) return;
+        const relatedTransactions = get().transactions.filter((t) => t.goalId === id);
+
         set((state) => ({
           goals: state.goals.filter((g) => g.id !== id),
           transactions: state.transactions.filter((t) => t.goalId !== id),
+          pendingDeletion: { goal, transactions: relatedTransactions },
         }));
+      },
+
+      undoDelete: () => {
+        const pending = get().pendingDeletion;
+        if (!pending) return;
+        set((state) => ({
+          goals: [pending.goal, ...state.goals],
+          transactions: [...pending.transactions, ...state.transactions],
+          pendingDeletion: null,
+        }));
+      },
+
+      commitPendingDeletion: () => {
+        const pending = get().pendingDeletion;
+        if (pending?.goal.imageUri) {
+          deleteGoalImage(pending.goal.imageUri);
+        }
+        set({ pendingDeletion: null });
       },
 
       deposit: (goalId, amount, note) => {
@@ -120,6 +165,11 @@ export const useGoalsStore = create<GoalsState>()(
       name: 'saving-tracker-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ goals: state.goals, transactions: state.transactions }),
+      onRehydrateStorage: () => (state) => {
+        // Dipanggil otomatis begitu AsyncStorage selesai di-load ke memori.
+        // Root layout nunggu flag ini true sebelum nyembunyiin splash screen.
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

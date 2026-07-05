@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
+  Animated,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -10,26 +11,27 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getAccentColors, radius, spacing } from '../../src/theme/colors';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { formatThousands, parseThousands } from '../../src/utils/currency';
-import { useGoalsStore } from '../../src/store/useGoalsStore';
-import { JarProgress } from '../../src/components/JarProgress';
-import { TransactionRow } from '../../src/components/TransactionRow';
-import { EmptyState } from '../../src/components/EmptyState';
-import { GlassCard } from '../../src/components/GlassCard';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppAlert } from "../../src/components/AppAlert";
+import { EmptyState } from "../../src/components/EmptyState";
+import { GlassCard } from "../../src/components/GlassCard";
+import { JarProgress } from "../../src/components/JarProgress";
+import { TransactionRow } from "../../src/components/TransactionRow";
+import { useAppAlert } from "../../src/hooks/useAppAlert";
+import { useGoalsStore } from "../../src/store/useGoalsStore";
+import { getAccentColors, radius, spacing } from "../../src/theme/colors";
+import { useTheme } from "../../src/theme/useTheme";
+import { formatThousands, parseThousands } from "../../src/utils/currency";
 
-type ActionType = 'deposit' | 'withdraw' | null;
+type ActionType = "deposit" | "withdraw" | null;
 
 export default function GoalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, typography } = useTheme();
-  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
+  const { colors, typography, isDark } = useTheme();
+  const { alertState, showAlert, hideAlert } = useAppAlert();
 
   const goal = useGoalsStore((state) => state.getGoalById(id));
   const allTransactions = useGoalsStore((state) => state.transactions);
@@ -42,66 +44,286 @@ export default function GoalDetailScreen() {
       allTransactions
         .filter((t) => t.goalId === id)
         .sort((a, b) => b.createdAt - a.createdAt),
-    [allTransactions, id]
+    [allTransactions, id],
   );
 
   const [action, setAction] = useState<ActionType>(null);
-  const [amountDisplay, setAmountDisplay] = useState('');
-  const [note, setNote] = useState('');
+  const [amountDisplay, setAmountDisplay] = useState("");
+  const [note, setNote] = useState("");
 
-  const accent = useMemo(() => getAccentColors(goal?.accent ?? 'mint'), [goal]);
+  // --- Bottom sheet animation (custom, bukan pakai animationType bawaan Modal) ---
+  const [sheetMounted, setSheetMounted] = useState(false);
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(400)).current;
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (action !== null) {
+      setSheetMounted(true);
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(sheetTranslateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          damping: 18,
+          stiffness: 180,
+          mass: 0.9,
+        }),
+      ]).start();
+    } else if (sheetMounted) {
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetTranslateY, {
+          toValue: 400,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setSheetMounted(false));
+    }
+  }, [action, backdropOpacity, sheetMounted, sheetTranslateY]);
+
+  // Listen keyboard secara manual & geser sheet ke atas persis setinggi keyboard.
+  // KeyboardAvoidingView SENGAJA tidak dipakai di sini karena tidak reliable
+  // saat berada di dalam <Modal> Android (window terpisah dari activity utama).
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: e.endCoordinates.height,
+        duration: Platform.OS === "ios" ? (e.duration ?? 250) : 200,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: Platform.OS === "ios" ? (e?.duration ?? 250) : 200,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardOffset]);
+
+  const accent = useMemo(() => getAccentColors(goal?.accent ?? "mint"), [goal]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        content: {
+          paddingHorizontal: spacing.lg,
+          paddingBottom: spacing.xxl,
+        },
+        goalName: {
+          ...typography.title,
+          textAlign: "center",
+          marginBottom: spacing.md,
+        },
+        actionRow: {
+          flexDirection: "row",
+          gap: spacing.md,
+          marginTop: spacing.lg,
+        },
+        actionButton: {
+          flex: 1,
+          borderRadius: radius.md,
+          paddingVertical: spacing.md,
+          alignItems: "center",
+        },
+        actionButtonText: {
+          ...typography.subtitle,
+          color: colors.textInverse,
+        },
+        metaRow: {
+          flexDirection: "row",
+          justifyContent: "center",
+          gap: spacing.lg,
+          marginTop: spacing.lg,
+        },
+        metaLink: {
+          ...typography.caption,
+          fontWeight: "600",
+        },
+        sectionTitle: {
+          ...typography.subtitle,
+          marginTop: spacing.xl,
+          marginBottom: spacing.sm,
+        },
+        txCard: {
+          paddingHorizontal: spacing.md,
+          marginBottom: spacing.sm,
+        },
+        backdrop: {
+          flex: 1,
+          backgroundColor: colors.overlayScrim,
+        },
+        sheetWrapper: {
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+        },
+        sheetCard: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: radius.xl,
+          borderTopRightRadius: radius.xl,
+          padding: spacing.lg,
+          paddingBottom: spacing.lg + insets.bottom,
+        },
+        grabber: {
+          width: 40,
+          height: 5,
+          borderRadius: radius.pill,
+          backgroundColor: colors.glassBorder,
+          alignSelf: "center",
+          marginBottom: spacing.md,
+        },
+        modalTitle: {
+          ...typography.subtitle,
+          marginBottom: spacing.xs,
+        },
+        modalHint: {
+          ...typography.caption,
+          marginBottom: spacing.sm,
+        },
+        currencyInputWrap: {
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: colors.surfaceMuted,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.glassBorder,
+          paddingHorizontal: spacing.md,
+          marginTop: spacing.sm,
+        },
+        currencyPrefix: {
+          ...typography.subtitle,
+          color: colors.textSecondary,
+          marginRight: spacing.xs,
+        },
+        currencyInput: {
+          ...typography.amount,
+          flex: 1,
+          paddingVertical: spacing.md,
+        },
+        noteInput: {
+          ...typography.body,
+          backgroundColor: colors.surfaceMuted,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.glassBorder,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          marginTop: spacing.md,
+        },
+        modalActions: {
+          flexDirection: "row",
+          gap: spacing.md,
+          marginTop: spacing.lg,
+        },
+        modalButton: {
+          flex: 1,
+          borderRadius: radius.md,
+          paddingVertical: spacing.md,
+          alignItems: "center",
+        },
+        modalButtonGhost: {
+          backgroundColor: colors.surfaceMuted,
+        },
+        modalButtonGhostText: {
+          ...typography.subtitle,
+          color: colors.textPrimary,
+        },
+      }),
+    [colors, typography, insets.bottom],
+  );
 
   if (!goal) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
-        <EmptyState emoji="🔍" title="Goal tidak ditemukan" description="Goal ini mungkin sudah dihapus." />
+      <View
+        style={[styles.container, { paddingTop: insets.top + spacing.xl }]}
+        key={isDark ? "dark" : "light"}
+      >
+        <EmptyState
+          emoji="🔍"
+          title="Goal tidak ditemukan"
+          description="Goal ini mungkin sudah dihapus."
+        />
       </View>
     );
   }
 
-  const closeModal = () => {
+  const closeSheet = () => {
     setAction(null);
-    setAmountDisplay('');
-    setNote('');
+    setAmountDisplay("");
+    setNote("");
   };
 
   const handleConfirm = () => {
     const amount = parseThousands(amountDisplay);
     if (amount <= 0) {
-      Alert.alert('Jumlah belum diisi', 'Masukkan nominal yang valid.');
+      showAlert("Jumlah belum diisi", "Masukkan nominal yang valid.");
       return;
     }
 
-    if (action === 'deposit') {
+    if (action === "deposit") {
       deposit(goal.id, amount, note.trim() || undefined);
-      closeModal();
-    } else if (action === 'withdraw') {
+      closeSheet();
+    } else if (action === "withdraw") {
       const result = withdraw(goal.id, amount, note.trim() || undefined);
       if (!result.ok) {
-        Alert.alert('Tidak bisa menarik', result.error ?? 'Terjadi kesalahan.');
+        showAlert("Tidak bisa menarik", result.error ?? "Terjadi kesalahan.");
         return;
       }
-      closeModal();
+      closeSheet();
     }
   };
 
   const handleDelete = () => {
-    Alert.alert('Hapus goal?', `"${goal.name}" beserta seluruh history-nya akan dihapus permanen.`, [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Hapus',
-        style: 'destructive',
-        onPress: () => {
-          deleteGoal(goal.id);
-          router.back();
+    showAlert(
+      "Hapus goal?",
+      `"${goal.name}" akan dihapus. Kamu masih bisa "Undo" beberapa detik setelah ini.`,
+      [
+        { label: "Batal", style: "cancel" },
+        {
+          label: "Hapus",
+          style: "destructive",
+          onPress: () => {
+            deleteGoal(goal.id);
+            router.back();
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 60 }]}>
+    <View style={styles.container} key={isDark ? "dark" : "light"}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 60 },
+        ]}
+      >
         <Text style={styles.goalName}>{goal.name}</Text>
 
         <JarProgress
@@ -114,13 +336,13 @@ export default function GoalDetailScreen() {
         <View style={styles.actionRow}>
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.deposit }]}
-            onPress={() => setAction('deposit')}
+            onPress={() => setAction("deposit")}
           >
             <Text style={styles.actionButtonText}>+ Nabung</Text>
           </Pressable>
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.withdraw }]}
-            onPress={() => setAction('withdraw')}
+            onPress={() => setAction("withdraw")}
           >
             <Text style={styles.actionButtonText}>- Tarik</Text>
           </Pressable>
@@ -128,38 +350,68 @@ export default function GoalDetailScreen() {
 
         <View style={styles.metaRow}>
           <Pressable onPress={() => router.push(`/goal/add?id=${goal.id}`)}>
-            <Text style={styles.metaLink}>Edit goal</Text>
+            <Text style={[styles.metaLink, { color: colors.textSecondary }]}>
+              Edit goal
+            </Text>
           </Pressable>
           <Pressable onPress={handleDelete}>
-            <Text style={[styles.metaLink, { color: colors.danger }]}>Hapus goal</Text>
+            <Text style={[styles.metaLink, { color: colors.danger }]}>
+              Hapus goal
+            </Text>
           </Pressable>
         </View>
 
         <Text style={styles.sectionTitle}>History</Text>
         {transactions.length === 0 ? (
-          <EmptyState emoji="🌱" title="Belum ada transaksi" description="Mulai nabung untuk lihat progress-nya di sini." />
+          <EmptyState
+            emoji="🌱"
+            title="Belum ada transaksi"
+            description="Mulai nabung untuk lihat progress-nya di sini."
+          />
         ) : (
           transactions.map((tx) => (
-            <GlassCard key={tx.id} style={styles.txCard}>
+            <GlassCard
+              key={tx.id}
+              tintColor={colors.surface + "A6"}
+              style={styles.txCard}
+            >
               <TransactionRow transaction={tx} />
             </GlassCard>
           ))
         )}
       </ScrollView>
 
-      <Modal visible={action !== null} transparent animationType="fade" onRequestClose={closeModal}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalBackdrop}
-        >
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} />
-          <View style={styles.modalCard}>
+      <Modal
+        visible={sheetMounted}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={closeSheet}
+      >
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet} />
+        </Animated.View>
+
+        <View style={styles.sheetWrapper} pointerEvents="box-none">
+          <Animated.View
+            style={[
+              styles.sheetCard,
+              {
+                transform: [
+                  { translateY: sheetTranslateY },
+                  { translateY: Animated.multiply(keyboardOffset, -1) },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.grabber} />
             <Text style={styles.modalTitle}>
-              {action === 'deposit' ? 'Nabung ke goal ini' : 'Tarik tabungan'}
+              {action === "deposit" ? "Nabung ke goal ini" : "Tarik tabungan"}
             </Text>
-            {action === 'withdraw' && (
+            {action === "withdraw" && (
               <Text style={styles.modalHint}>
-                Saldo tersedia: {new Intl.NumberFormat('id-ID').format(goal.currentAmount)}
+                Saldo tersedia:{" "}
+                {new Intl.NumberFormat("id-ID").format(goal.currentAmount)}
               </Text>
             )}
 
@@ -185,144 +437,36 @@ export default function GoalDetailScreen() {
             />
 
             <View style={styles.modalActions}>
-              <Pressable onPress={closeModal} style={[styles.modalButton, styles.modalButtonGhost]}>
+              <Pressable
+                onPress={closeSheet}
+                style={[styles.modalButton, styles.modalButtonGhost]}
+              >
                 <Text style={styles.modalButtonGhostText}>Batal</Text>
               </Pressable>
               <Pressable
                 onPress={handleConfirm}
                 style={[
                   styles.modalButton,
-                  { backgroundColor: action === 'deposit' ? colors.deposit : colors.withdraw },
+                  {
+                    backgroundColor:
+                      action === "deposit" ? colors.deposit : colors.withdraw,
+                  },
                 ]}
               >
                 <Text style={styles.actionButtonText}>Konfirmasi</Text>
               </Pressable>
             </View>
-          </View>
-        </KeyboardAvoidingView>
+          </Animated.View>
+        </View>
       </Modal>
+
+      <AppAlert
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        buttons={alertState.buttons}
+        onClose={hideAlert}
+      />
     </View>
   );
-}
-
-function createStyles(colors: ReturnType<typeof useTheme>['colors'], typography: ReturnType<typeof useTheme>['typography']) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.xxl,
-    },
-    goalName: {
-      ...typography.title,
-      textAlign: 'center',
-      marginBottom: spacing.md,
-    },
-    actionRow: {
-      flexDirection: 'row',
-      gap: spacing.md,
-      marginTop: spacing.lg,
-    },
-    actionButton: {
-      flex: 1,
-      borderRadius: radius.md,
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-    },
-    actionButtonText: {
-      ...typography.subtitle,
-      color: colors.textInverse,
-    },
-    metaRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: spacing.lg,
-      marginTop: spacing.lg,
-    },
-    metaLink: {
-      ...typography.caption,
-      color: colors.lavenderDeep,
-      fontWeight: '600',
-    },
-    sectionTitle: {
-      ...typography.subtitle,
-      marginTop: spacing.xl,
-      marginBottom: spacing.sm,
-    },
-    txCard: {
-      paddingHorizontal: spacing.md,
-      marginBottom: spacing.sm,
-    },
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: colors.overlayScrim,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: spacing.lg,
-    },
-    modalCard: {
-      width: '100%',
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      padding: spacing.lg,
-    },
-    modalTitle: {
-      ...typography.subtitle,
-      marginBottom: spacing.xs,
-    },
-    modalHint: {
-      ...typography.caption,
-      marginBottom: spacing.sm,
-    },
-    currencyInputWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.surfaceMuted,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-      paddingHorizontal: spacing.md,
-      marginTop: spacing.sm,
-    },
-    currencyPrefix: {
-      ...typography.subtitle,
-      color: colors.textSecondary,
-      marginRight: spacing.xs,
-    },
-    currencyInput: {
-      ...typography.amount,
-      flex: 1,
-      paddingVertical: spacing.md,
-    },
-    noteInput: {
-      ...typography.body,
-      backgroundColor: colors.surfaceMuted,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.glassBorder,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      marginTop: spacing.md,
-    },
-    modalActions: {
-      flexDirection: 'row',
-      gap: spacing.md,
-      marginTop: spacing.lg,
-    },
-    modalButton: {
-      flex: 1,
-      borderRadius: radius.md,
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-    },
-    modalButtonGhost: {
-      backgroundColor: colors.surfaceMuted,
-    },
-    modalButtonGhostText: {
-      ...typography.subtitle,
-      color: colors.textPrimary,
-    },
-  });
 }

@@ -7,19 +7,18 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tabungankertas",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#D9C9F2",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true,
+      "permissions": ["SCHEDULE_EXACT_ALARM"]
     },
     "web": {
       "output": "static",
@@ -33,9 +32,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#F6F4FB",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#17151F"
           }
         }
       ],
@@ -44,7 +43,8 @@
         {
           "photosPermission": "Aplikasi butuh akses galeri supaya kamu bisa memilih gambar untuk goal tabunganmu."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

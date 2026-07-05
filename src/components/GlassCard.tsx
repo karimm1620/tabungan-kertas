@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { Platform, StyleSheet, View, ViewProps } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { radius } from '../theme/colors';
-import { useTheme } from '../theme/ThemeContext';
+import { BlurView } from "expo-blur";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import React, { useMemo } from "react";
+import { Platform, StyleSheet, View, ViewProps } from "react-native";
+import { radius } from "../theme/colors";
+import { useTheme } from "../theme/useTheme";
 
 interface GlassCardProps extends ViewProps {
   /** Tint pastel opsional untuk membedakan card (default: colors.glassTintLight dari tema aktif) */
@@ -27,16 +27,20 @@ export function GlassCard({
   ...rest
 }: GlassCardProps) {
   const { colors, isDark } = useTheme();
-  const useNativeGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const useNativeGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
   const resolvedTint = tintColor ?? colors.glassTintLight;
 
   const baseStyle = useMemo(
     () => [
       styles.base,
-      { borderRadius: radiusSize, backgroundColor: resolvedTint, borderColor: colors.glassBorder },
+      {
+        borderRadius: radiusSize,
+        backgroundColor: resolvedTint,
+        borderColor: colors.glassBorder,
+      },
       style,
     ],
-    [style, resolvedTint, radiusSize, colors.glassBorder]
+    [style, resolvedTint, radiusSize, colors.glassBorder],
   );
 
   if (useNativeGlass) {
@@ -47,15 +51,24 @@ export function GlassCard({
     );
   }
 
-  if (Platform.OS === 'ios') {
+  if (Platform.OS === "ios") {
     return (
       <BlurView
         intensity={55}
-        tint={isDark ? 'dark' : 'light'}
-        style={[styles.base, { borderRadius: radiusSize, borderColor: colors.glassBorder }, style]}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          styles.base,
+          { borderRadius: radiusSize, borderColor: colors.glassBorder },
+          style,
+        ]}
         {...rest}
       >
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: resolvedTint, borderRadius: radiusSize }]} />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: resolvedTint, borderRadius: radiusSize },
+          ]}
+        />
         {children}
       </BlurView>
     );
@@ -71,7 +84,7 @@ export function GlassCard({
 
 const styles = StyleSheet.create({
   base: {
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
   },
 });

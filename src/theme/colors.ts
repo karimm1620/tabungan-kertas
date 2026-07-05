@@ -1,66 +1,37 @@
 /**
  * Design tokens — palet pastel untuk Saving Tracker.
- * Konsep: "jar tabungan" tenang & lembut, dengan aksen kaca (glass)
- * yang menegaskan metafora "melihat isi tabungan lewat kaca".
- *
- * Ada 2 palet: lightColors & darkColors. Aksen (mint/peach/lavender/rose/sky)
- * sengaja SAMA di kedua tema — pastel tetap enak dilihat di background gelap,
- * dan menjaga identitas visual konsisten antara mode terang & gelap.
+ * Dipecah jadi lightColors & darkColors supaya bisa dipakai reaktif
+ * lewat hook useTheme() (lihat useTheme.ts) yang otomatis ngikutin
+ * pengaturan tema device (useColorScheme).
  */
 
 export interface ThemeColors {
   background: string;
   surface: string;
   surfaceMuted: string;
-
   glassTintLight: string;
-  glassTintAccent: string;
+  glassTintLavender: string;
   glassBorder: string;
-
-  mint: string;
-  mintDeep: string;
-  peach: string;
-  peachDeep: string;
-  lavender: string;
-  lavenderDeep: string;
-  rose: string;
-  roseDeep: string;
-  sky: string;
-  skyDeep: string;
-
   deposit: string;
   withdraw: string;
-
   textPrimary: string;
   textSecondary: string;
   textInverse: string;
-
   danger: string;
   overlayScrim: string;
 }
 
 export const lightColors: ThemeColors = {
-  background: '#F6F4FB',
+  background: '#F6F4FB', // lavender putih, latar utama
   surface: '#FFFFFF',
   surfaceMuted: '#FBFAFE',
 
-  glassTintLight: 'rgba(255,255,255,0.6)',
-  glassTintAccent: 'rgba(217,201,242,0.35)',
+  glassTintLight: 'rgba(255,255,255,0.55)',
+  glassTintLavender: 'rgba(216,199,240,0.35)',
   glassBorder: 'rgba(58,53,80,0.08)',
 
-  mint: '#BFE8DA',
-  mintDeep: '#6FBFA6',
-  peach: '#FFD9C2',
-  peachDeep: '#F2A374',
-  lavender: '#D9C9F2',
-  lavenderDeep: '#A985E0',
-  rose: '#FFCBDA',
-  roseDeep: '#EE7FA0',
-  sky: '#C6E3F7',
-  skyDeep: '#6FAEDE',
-
-  deposit: '#6FBFA6',
-  withdraw: '#EE7FA0',
+  deposit: '#6FBFA6', // nabung = tenang, tumbuh
+  withdraw: '#EE7FA0', // tarik = perlu perhatian, bukan alarm
 
   textPrimary: '#332E4A',
   textSecondary: '#8B84A0',
@@ -71,47 +42,37 @@ export const lightColors: ThemeColors = {
 };
 
 export const darkColors: ThemeColors = {
-  background: '#18151F',
-  surface: '#231F2E',
-  surfaceMuted: '#2A2536',
+  background: '#17151F', // hitam kebiruan-ungu, bukan hitam pekat
+  surface: '#211E2C',
+  surfaceMuted: '#2A2636',
 
-  glassTintLight: 'rgba(255,255,255,0.08)',
-  glassTintAccent: 'rgba(217,201,242,0.10)',
-  glassBorder: 'rgba(255,255,255,0.10)',
-
-  mint: '#BFE8DA',
-  mintDeep: '#6FBFA6',
-  peach: '#FFD9C2',
-  peachDeep: '#F2A374',
-  lavender: '#D9C9F2',
-  lavenderDeep: '#A985E0',
-  rose: '#FFCBDA',
-  roseDeep: '#EE7FA0',
-  sky: '#C6E3F7',
-  skyDeep: '#6FAEDE',
+  glassTintLight: 'rgba(255,255,255,0.07)',
+  glassTintLavender: 'rgba(180,160,220,0.14)',
+  glassBorder: 'rgba(255,255,255,0.12)',
 
   deposit: '#7FD1B8',
-  withdraw: '#F591A8',
+  withdraw: '#F294B0',
 
-  textPrimary: '#F1EEF7',
-  textSecondary: '#A79FBE',
+  textPrimary: '#F4F2FA',
+  textSecondary: '#A79FBF',
   textInverse: '#FFFFFF',
 
-  danger: '#F17A9B',
-  overlayScrim: 'rgba(0,0,0,0.55)',
+  danger: '#FF8FA8',
+  overlayScrim: 'rgba(0,0,0,0.6)',
 };
-
-// --- Aksen per goal — theme-agnostic, sama di light & dark ---
 
 export type AccentKey = 'mint' | 'peach' | 'lavender' | 'rose' | 'sky';
 
 export const accentByKey: Record<AccentKey, { base: string; deep: string }> = {
-  mint: { base: lightColors.mint, deep: lightColors.mintDeep },
-  peach: { base: lightColors.peach, deep: lightColors.peachDeep },
-  lavender: { base: lightColors.lavender, deep: lightColors.lavenderDeep },
-  rose: { base: lightColors.rose, deep: lightColors.roseDeep },
-  sky: { base: lightColors.sky, deep: lightColors.skyDeep },
+  mint: { base: '#BFE8DA', deep: '#6FBFA6' },
+  peach: { base: '#FFD9C2', deep: '#F2A374' },
+  lavender: { base: '#D9C9F2', deep: '#A985E0' },
+  rose: { base: '#FFCBDA', deep: '#EE7FA0' },
+  sky: { base: '#C6E3F7', deep: '#6FAEDE' },
 };
+
+/** Warna teks yang dipakai di atas chip/icon-wrap ber-background aksen pastel */
+export const textOnAccent = '#332E4A';
 
 const accentKeys = Object.keys(accentByKey) as AccentKey[];
 

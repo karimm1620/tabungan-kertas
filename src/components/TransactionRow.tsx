@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { radius, spacing } from '../theme/colors';
-import { useTheme } from '../theme/ThemeContext';
-import { formatIDR } from '../utils/currency';
-import type { Transaction } from '../types';
+import React, { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { radius, spacing } from "../theme/colors";
+import { useTheme } from "../theme/useTheme";
+import type { Transaction } from "../types";
+import { formatIDR } from "../utils/currency";
 
 interface TransactionRowProps {
   transaction: Transaction;
@@ -13,30 +13,35 @@ interface TransactionRowProps {
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
-  return date.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 export function TransactionRow({ transaction, goalName }: TransactionRowProps) {
   const { colors, typography } = useTheme();
-  const isDeposit = transaction.type === 'deposit';
+  const isDeposit = transaction.type === "deposit";
   const color = isDeposit ? colors.deposit : colors.withdraw;
-  const sign = isDeposit ? '+' : '-';
-  const icon = isDeposit ? '↓' : '↑'; // panah masuk ke tabungan / keluar dari tabungan
-  const styles = useMemo(() => createStyles(colors, typography), [colors, typography]);
+  const sign = isDeposit ? "+" : "-";
+  const icon = isDeposit ? "↓" : "↑";
+  const styles = useMemo(
+    () => createStyles(colors, typography),
+    [colors, typography],
+  );
 
   return (
     <View style={styles.row}>
-      <View style={[styles.iconWrap, { backgroundColor: color + '26' }]}>
+      <View style={[styles.iconWrap, { backgroundColor: color + "26" }]}>
         <Text style={[styles.icon, { color }]}>{icon}</Text>
       </View>
       <View style={styles.info}>
-        <Text style={styles.title}>{isDeposit ? 'Menabung' : 'Menarik tabungan'}</Text>
+        <Text style={styles.title}>
+          {isDeposit ? "Menabung" : "Menarik tabungan"}
+        </Text>
         {goalName ? <Text style={styles.goalName}>{goalName}</Text> : null}
         {transaction.note ? (
           <Text style={styles.note} numberOfLines={1}>
@@ -52,23 +57,26 @@ export function TransactionRow({ transaction, goalName }: TransactionRowProps) {
   );
 }
 
-function createStyles(colors: ReturnType<typeof useTheme>['colors'], typography: ReturnType<typeof useTheme>['typography']) {
+function createStyles(
+  colors: ReturnType<typeof useTheme>["colors"],
+  typography: ReturnType<typeof useTheme>["typography"],
+) {
   return StyleSheet.create({
     row: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       paddingVertical: spacing.sm,
     },
     iconWrap: {
       width: 40,
       height: 40,
       borderRadius: radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
     },
     icon: {
       fontSize: 18,
-      fontWeight: '700',
+      fontWeight: "700",
     },
     info: {
       flex: 1,
@@ -76,7 +84,7 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors'], typography:
     },
     title: {
       ...typography.body,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.textPrimary,
     },
     goalName: {
@@ -93,7 +101,7 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors'], typography:
     },
     amount: {
       ...typography.body,
-      fontWeight: '700',
+      fontWeight: "700",
     },
   });
 }

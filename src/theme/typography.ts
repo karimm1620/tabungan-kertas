@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import type { ThemeColors } from './colors';
 
 /**
  * Sengaja pakai system font (San Francisco di iOS, Roboto di Android)
@@ -19,49 +18,49 @@ const fontFamilyMedium = Platform.select({
 });
 
 /**
- * Typography dibuat sebagai factory function (bukan objek statis) karena
- * warnanya harus ikut berubah sesuai tema aktif (light/dark). Dipanggil
- * lewat useTheme() di dalam komponen, bukan di-import langsung.
+ * Typography dibuat sebagai FUNGSI (bukan konstanta statis) karena warna
+ * teksnya (textPrimary/textSecondary) berubah tergantung light/dark theme.
+ * Dipanggil dari dalam useTheme() supaya reaktif ikut tema device.
  */
-export function createTypography(colors: ThemeColors) {
+export function buildTypography(textPrimary: string, textSecondary: string) {
   return {
     display: {
       fontFamily,
       fontSize: 34,
       fontWeight: '700' as const,
-      color: colors.textPrimary,
+      color: textPrimary,
       letterSpacing: -0.5,
     },
     title: {
       fontFamily: fontFamilyMedium,
       fontSize: 22,
       fontWeight: '700' as const,
-      color: colors.textPrimary,
+      color: textPrimary,
       letterSpacing: -0.3,
     },
     subtitle: {
       fontFamily: fontFamilyMedium,
       fontSize: 17,
       fontWeight: '600' as const,
-      color: colors.textPrimary,
+      color: textPrimary,
     },
     body: {
       fontFamily,
       fontSize: 15,
       fontWeight: '400' as const,
-      color: colors.textPrimary,
+      color: textPrimary,
     },
     caption: {
       fontFamily,
       fontSize: 13,
       fontWeight: '400' as const,
-      color: colors.textSecondary,
+      color: textSecondary,
     },
     label: {
       fontFamily: fontFamilyMedium,
       fontSize: 12,
       fontWeight: '600' as const,
-      color: colors.textSecondary,
+      color: textSecondary,
       letterSpacing: 0.4,
       textTransform: 'uppercase' as const,
     },
@@ -69,10 +68,10 @@ export function createTypography(colors: ThemeColors) {
       fontFamily: fontFamilyMedium,
       fontSize: 28,
       fontWeight: '700' as const,
-      color: colors.textPrimary,
+      color: textPrimary,
       letterSpacing: -0.5,
     },
   };
 }
 
-export type Typography = ReturnType<typeof createTypography>;
+export type Typography = ReturnType<typeof buildTypography>;
