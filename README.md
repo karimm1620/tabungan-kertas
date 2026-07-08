@@ -1,50 +1,91 @@
-# Welcome to your Expo app 👋
+# Tabungan Kertas
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Tabungan Kertas adalah aplikasi sederhana untuk membantu mencatat tabungan berdasarkan target yang ingin dicapai. Kamu bisa membuat beberapa goal, menambahkan gambar atau emoji sebagai ikon, melihat progres tabungan melalui animasi jar, dan mengaktifkan pengingat harian agar lebih konsisten menabung.
 
-## Get started
+Semua data disimpan langsung di perangkat, sehingga aplikasi dapat digunakan sepenuhnya secara offline tanpa perlu akun.
 
-1. Install dependencies
+## Download
 
-   ```bash
-   npm install
-   ```
+Download sekarang **[GitHub Releases](../../releases)**.
 
-2. Start the app
+> Jika muncul peringatan keamanan (Play Protect), pilih **"Install Anyway" / "Tetap Instal"** (ini normal karena aplikasi belum di-publish ke Google Play Store).
 
-   ```bash
-   npx expo start
-   ```
+## Features
 
-In the output, you'll find options to open the app in a
+- Membuat goal tabungan dengan target nominal, gambar, atau emoji.
+- Visualisasi progres menggunakan animasi jar yang akan terisi sesuai jumlah tabungan.
+- Menambah maupun menarik saldo kapan saja dengan riwayat transaksi yang tersimpan.
+- Halaman history untuk melihat seluruh aktivitas tabungan.
+- Mengurutkan dan memfilter goal berdasarkan kebutuhan.
+- Undo setelah menghapus goal agar tidak langsung hilang permanen.
+- Mendukung dark mode mengikuti tema perangkat.
+- Reminder harian dengan waktu yang bisa diatur.
+- Efek glass pada antarmuka ((Liquid Glass native di iOS 26+, blur/pastel di platform lain).
+- Seluruh data disimpan secara lokal menggunakan AsyncStorage.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Tech Stack
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+| Teknologi | Digunakan untuk |
+| ---------- | --------------- |
+| Expo (React Native) | Framework utama |
+| Expo Router | Navigasi |
+| TypeScript | Bahasa pemrograman |
+| Zustand | State management & persistence |
+| AsyncStorage | Penyimpanan data lokal |
+| expo-notifications | Reminder harian |
+| expo-image-picker | Memilih gambar |
+| expo-file-system | Menyimpan gambar |
+| expo-glass-effect | Efek glass |
+| expo-blur | Fallback glass effect |
+| Animated API | Animasi |
 
-## Get a fresh project
+## Struktur Project
 
-When you're ready, run:
+```text
+app/
+  _layout.tsx
+  (tabs)/
+    _layout.tsx
+    index.tsx
+    history.tsx
+  goal/
+    add.tsx
+    [id].tsx
 
-```bash
-npm run reset-project
+src/
+  components/
+  hooks/
+  store/
+  theme/
+  types/
+  utils/
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Menjalankan Project
 
-## Learn more
+Pastikan Node.js versi 22 atau lebih baru sudah terpasang.
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+git clone <repository-url>
+cd <project-folder>
+npm install
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Setelah server berjalan, scan QR Code menggunakan [Expo Go](https://expo.dev/go) atau jalankan melalui emulator Android/iOS.
 
-## Join the community
+## Build APK
 
-Join our community of developers creating universal apps.
+Build dengan [EAS Build](https://docs.expo.dev/build/introduction/).
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm install -g eas-cli
+eas login
+eas build --profile preview --platform android
+```
+
+Setelah proses build selesai, APK dapat diunduh melalui [dashboard Expo](https://expo.dev) atau dari link yang diberikan di terminal.
+
+## License
+
+[LICENSE](./LICENSE).

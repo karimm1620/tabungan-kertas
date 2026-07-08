@@ -18,7 +18,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": true,
-      "permissions": ["SCHEDULE_EXACT_ALARM"]
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.immz.tabungankertas"
     },
     "web": {
       "output": "static",
@@ -49,6 +53,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "dbd93928-e1b7-41b1-a3a7-20e1a952fc79"
+      }
     }
   }
 }

@@ -41,3 +41,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Setup for continue project dev
+SETUP.md
