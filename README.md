@@ -20,7 +20,7 @@ Download sekarang **[GitHub Releases](../../releases)**.
 - Undo setelah menghapus goal agar tidak langsung hilang permanen.
 - Mendukung dark mode mengikuti tema perangkat.
 - Reminder harian dengan waktu yang bisa diatur.
-- Efek glass pada antarmuka ((Liquid Glass native di iOS 26+, blur/pastel di platform lain).
+- Efek glass pada antarmuka (Liquid Glass native di iOS 26+, blur/pastel di platform lain).
 - Seluruh data disimpan secara lokal menggunakan AsyncStorage.
 
 ## Tech Stack
