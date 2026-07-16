@@ -1,10 +1,3 @@
-/**
- * Design tokens — palet pastel untuk Saving Tracker.
- * Dipecah jadi lightColors & darkColors supaya bisa dipakai reaktif
- * lewat hook useTheme() (lihat useTheme.ts) yang otomatis ngikutin
- * pengaturan tema device (useColorScheme).
- */
-
 export interface ThemeColors {
   background: string;
   surface: string;
@@ -22,7 +15,7 @@ export interface ThemeColors {
 }
 
 export const lightColors: ThemeColors = {
-  background: '#F6F4FB', // lavender putih, latar utama
+  background: '#F6F4FB',
   surface: '#FFFFFF',
   surfaceMuted: '#FBFAFE',
 
@@ -30,8 +23,8 @@ export const lightColors: ThemeColors = {
   glassTintLavender: 'rgba(216,199,240,0.35)',
   glassBorder: 'rgba(58,53,80,0.08)',
 
-  deposit: '#6FBFA6', // nabung = tenang, tumbuh
-  withdraw: '#EE7FA0', // tarik = perlu perhatian, bukan alarm
+  deposit: '#6FBFA6',
+  withdraw: '#EE7FA0',
 
   textPrimary: '#332E4A',
   textSecondary: '#8B84A0',
@@ -42,7 +35,7 @@ export const lightColors: ThemeColors = {
 };
 
 export const darkColors: ThemeColors = {
-  background: '#17151F', // hitam kebiruan-ungu, bukan hitam pekat
+  background: '#17151F',
   surface: '#211E2C',
   surfaceMuted: '#2A2636',
 
@@ -106,3 +99,14 @@ export const spacing = {
   xl: 32,
   xxl: 48,
 };
+
+export function withOpacity(hexColor: string, alpha: number): string {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  const alphaHex = Math.round(clamped * 255)
+    .toString(16)
+    .padStart(2, '0')
+    .toUpperCase();
+  return `${hexColor}${alphaHex}`;
+}
+
+export const glassShineTint = 'rgba(255,255,255,0.25)';

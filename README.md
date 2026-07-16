@@ -61,31 +61,6 @@ src/
   utils/
 ```
 
-## Menjalankan Project
-
-Pastikan Node.js versi 22 atau lebih baru sudah terpasang.
-
-```bash
-git clone <repository-url>
-cd <project-folder>
-npm install
-npx expo start
-```
-
-Setelah server berjalan, scan QR Code menggunakan [Expo Go](https://expo.dev/go) atau jalankan melalui emulator Android/iOS.
-
-## Build APK
-
-Build dengan [EAS Build](https://docs.expo.dev/build/introduction/).
-
-```bash
-npm install -g eas-cli
-eas login
-eas build --profile preview --platform android
-```
-
-Setelah proses build selesai, APK dapat diunduh melalui [dashboard Expo](https://expo.dev) atau dari link yang diberikan di terminal.
-
 ## License
 
 [LICENSE](./LICENSE).

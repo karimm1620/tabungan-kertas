@@ -47,6 +47,21 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
+/**
+ * Cek status izin SAAT INI tanpa memicu prompt sistem (beda dari
+ * requestNotificationPermission yang bisa nampilin dialog OS).
+ * Dipakai buat re-check tiap kali ReminderSheet dibuka.
+ */
+export async function checkNotificationPermission(): Promise<boolean> {
+  if (!isNotificationsAvailable) return false;
+  try {
+    const current = await Notifications.getPermissionsAsync();
+    return current.granted;
+  } catch {
+    return false;
+  }
+}
+
 /** Jadwalkan reminder harian pada jam:menit tertentu, return identifier-nya (atau null kalau gagal) */
 export async function scheduleDailyReminder(hour: number, minute: number): Promise<string | null> {
   if (!isNotificationsAvailable) return null;

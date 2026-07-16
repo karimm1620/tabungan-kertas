@@ -1,12 +1,32 @@
-import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import { accentByKey, radius, spacing } from '../theme/colors';
-import { useTheme } from '../theme/useTheme';
+import React, { useMemo } from "react";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { accentByKey, radius, spacing } from "../theme/colors";
+import { useTheme } from "../theme/useTheme";
 
 const EMOJI_OPTIONS = [
-  '🎯', '💰', '🏠', '🚗', '✈️', '🎓', '💍', '📱',
-  '💻', '🎮', '📷', '🚲', '⌚️', '👟', '🎸', '🏖️',
-  '🐶', '👶', '🎁', '⛑️', '🛋️', '🧳', '🚀', '🌱',
+  "🎯",
+  "💰",
+  "🏠",
+  "🧳",
+  "🚗",
+  "🎓",
+  "💍",
+  "📱",
+  "💻",
+  "🎮",
+  "📷",
+  "🚲",
+  "⌚️",
+  "👟",
+  "🎸",
+  "🏖️",
+  "🐶",
+  "👶",
+  "🎁",
+  "⛑️",
+  "🛋️",
+  "✈️",
+  "🌱",
 ];
 
 interface EmojiPickerProps {
@@ -28,12 +48,12 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
           width: 48,
           height: 48,
           borderRadius: radius.md,
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: "center",
+          justifyContent: "center",
           backgroundColor: colors.surfaceMuted,
           marginRight: spacing.sm,
           borderWidth: 1.5,
-          borderColor: 'transparent',
+          borderColor: "transparent",
         },
         itemActive: {
           borderColor: accentByKey.lavender.deep,
@@ -43,11 +63,15 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
           fontSize: 22,
         },
       }),
-    [colors]
+    [colors],
   );
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
       {EMOJI_OPTIONS.map((emoji) => {
         const isActive = emoji === selected;
         return (
@@ -55,6 +79,9 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
             key={emoji}
             onPress={() => onSelect(emoji)}
             style={[styles.item, isActive && styles.itemActive]}
+            accessibilityRole="button"
+            accessibilityLabel={`Pilih ikon ${emoji}`}
+            accessibilityState={{ selected: isActive }}
           >
             <Text style={styles.emoji}>{emoji}</Text>
           </Pressable>

@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import { useGoalsStore } from "../store/useGoalsStore";
-import { spacing } from "../theme/colors";
+import { UNDO_WINDOW_MS, useGoalsStore } from "../store/useGoalsStore";
+import { spacing, withOpacity } from "../theme/colors";
 import { useTheme } from "../theme/useTheme";
 import { GlassCard } from "./GlassCard";
-
-const UNDO_WINDOW_MS = 4000;
 
 export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
   const { colors, typography } = useTheme();
@@ -27,9 +25,11 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
         stiffness: 200,
       }).start();
 
+      const elapsed = Date.now() - pendingDeletion.deletedAt;
+      const remaining = Math.max(0, UNDO_WINDOW_MS - elapsed);
       timerRef.current = setTimeout(() => {
         commitPendingDeletion();
-      }, UNDO_WINDOW_MS);
+      }, remaining);
     } else if (mounted) {
       Animated.timing(translateY, {
         toValue: 120,
@@ -77,11 +77,19 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <Animated.View style={{ transform: [{ translateY }] }}>
-        <GlassCard tintColor={colors.surface + "F0"} style={styles.card}>
+        <GlassCard
+          tintColor={withOpacity(colors.surface, 0.94)}
+          style={styles.card}
+        >
           <Text style={styles.text} numberOfLines={1}>
             {pendingDeletion?.goal.name} dihapus
           </Text>
-          <Pressable onPress={undoDelete} hitSlop={8}>
+          <Pressable
+            onPress={undoDelete}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Batalkan penghapusan goal"
+          >
             <Text style={styles.undoText}>Undo</Text>
           </Pressable>
         </GlassCard>

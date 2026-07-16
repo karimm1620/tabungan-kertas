@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -19,6 +19,7 @@ import { accentByKey, radius, spacing } from "../../src/theme/colors";
 import { useTheme } from "../../src/theme/useTheme";
 import { formatThousands, parseThousands } from "../../src/utils/currency";
 import {
+  deleteGoalImage,
   ImagePermissionDeniedError,
   pickGoalImage,
 } from "../../src/utils/imageStorage";
@@ -42,20 +43,39 @@ export default function AddGoalScreen() {
   const [emoji, setEmoji] = useState<string | undefined>("🎯");
   const [pickerBusy, setPickerBusy] = useState(false);
 
+  const originalImageUri = useRef<string | undefined>(undefined);
+  const savedSuccessfully = useRef(false);
+
   useEffect(() => {
     if (goal) {
       setName(goal.name);
       setTargetDisplay(formatThousands(String(goal.targetAmount)));
       setImageUri(goal.imageUri);
+      originalImageUri.current = goal.imageUri;
       setEmoji(goal.emoji ?? "🎯");
     }
   }, [goal]);
+
+  useEffect(() => {
+    return () => {
+      if (
+        !savedSuccessfully.current &&
+        imageUri &&
+        imageUri !== originalImageUri.current
+      ) {
+        deleteGoalImage(imageUri);
+      }
+    };
+  }, [imageUri]);
 
   const handlePickImage = async () => {
     setPickerBusy(true);
     try {
       const uri = await pickGoalImage();
       if (uri) {
+        if (imageUri && imageUri !== originalImageUri.current) {
+          deleteGoalImage(imageUri);
+        }
         setImageUri(uri);
       }
     } catch (error) {
@@ -98,6 +118,7 @@ export default function AddGoalScreen() {
     } else {
       addGoal({ name: trimmedName, targetAmount: amount, imageUri, emoji });
     }
+    savedSuccessfully.current = true;
     router.back();
   };
 
@@ -193,9 +214,9 @@ export default function AddGoalScreen() {
 
   return (
     <KeyboardAvoidingView
+      key={isDark ? "dark" : "light"}
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      key={isDark ? "dark" : "light"}
     >
       <ScrollView
         style={styles.container}
@@ -207,6 +228,8 @@ export default function AddGoalScreen() {
             onPress={handlePickImage}
             disabled={pickerBusy}
             style={styles.imagePicker}
+            accessibilityRole="button"
+            accessibilityLabel="Pilih gambar goal dari galeri"
           >
             {imageUri ? (
               <Image source={{ uri: imageUri }} style={styles.imagePreview} />
@@ -220,6 +243,8 @@ export default function AddGoalScreen() {
             <Pressable
               onPress={() => setImageUri(undefined)}
               style={styles.removeImageBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Hapus gambar, pakai emoji sebagai gantinya"
             >
               <Text style={styles.removeImageText}>
                 Hapus gambar, pakai emoji
@@ -257,7 +282,14 @@ export default function AddGoalScreen() {
           />
         </View>
 
-        <Pressable onPress={handleSave} style={styles.saveButton}>
+        <Pressable
+          onPress={handleSave}
+          style={styles.saveButton}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isEditMode ? "Simpan perubahan goal" : "Buat goal baru"
+          }
+        >
           <Text style={styles.saveButtonText}>
             {isEditMode ? "Simpan Perubahan" : "Buat Goal"}
           </Text>

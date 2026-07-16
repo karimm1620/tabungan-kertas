@@ -94,7 +94,14 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           };
 
           return (
-            <Pressable key={route.key} onPress={onPress} style={styles.tab}>
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={styles.tab}
+              accessibilityRole="tab"
+              accessibilityLabel={meta.label}
+              accessibilityState={{ selected: isFocused }}
+            >
               <Text style={styles.icon}>{meta.icon}</Text>
               <Text
                 style={[

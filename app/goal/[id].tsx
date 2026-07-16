@@ -20,7 +20,12 @@ import { JarProgress } from "../../src/components/JarProgress";
 import { TransactionRow } from "../../src/components/TransactionRow";
 import { useAppAlert } from "../../src/hooks/useAppAlert";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
-import { getAccentColors, radius, spacing } from "../../src/theme/colors";
+import {
+  getAccentColors,
+  radius,
+  spacing,
+  withOpacity,
+} from "../../src/theme/colors";
 import { useTheme } from "../../src/theme/useTheme";
 import { formatThousands, parseThousands } from "../../src/utils/currency";
 
@@ -51,7 +56,6 @@ export default function GoalDetailScreen() {
   const [amountDisplay, setAmountDisplay] = useState("");
   const [note, setNote] = useState("");
 
-  // --- Bottom sheet animation (custom, bukan pakai animationType bawaan Modal) ---
   const [sheetMounted, setSheetMounted] = useState(false);
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(400)).current;
@@ -90,9 +94,6 @@ export default function GoalDetailScreen() {
     }
   }, [action, backdropOpacity, sheetMounted, sheetTranslateY]);
 
-  // Listen keyboard secara manual & geser sheet ke atas persis setinggi keyboard.
-  // KeyboardAvoidingView SENGAJA tidak dipakai di sini karena tidak reliable
-  // saat berada di dalam <Modal> Android (window terpisah dari activity utama).
   useEffect(() => {
     const showEvent =
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -260,8 +261,8 @@ export default function GoalDetailScreen() {
   if (!goal) {
     return (
       <View
-        style={[styles.container, { paddingTop: insets.top + spacing.xl }]}
         key={isDark ? "dark" : "light"}
+        style={[styles.container, { paddingTop: insets.top + spacing.xl }]}
       >
         <EmptyState
           emoji="🔍"
@@ -317,7 +318,7 @@ export default function GoalDetailScreen() {
   };
 
   return (
-    <View style={styles.container} key={isDark ? "dark" : "light"}>
+    <View key={isDark ? "dark" : "light"} style={styles.container}>
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -337,24 +338,36 @@ export default function GoalDetailScreen() {
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.deposit }]}
             onPress={() => setAction("deposit")}
+            accessibilityRole="button"
+            accessibilityLabel="Nabung ke goal ini"
           >
             <Text style={styles.actionButtonText}>+ Nabung</Text>
           </Pressable>
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.withdraw }]}
             onPress={() => setAction("withdraw")}
+            accessibilityRole="button"
+            accessibilityLabel="Tarik tabungan dari goal ini"
           >
             <Text style={styles.actionButtonText}>- Tarik</Text>
           </Pressable>
         </View>
 
         <View style={styles.metaRow}>
-          <Pressable onPress={() => router.push(`/goal/add?id=${goal.id}`)}>
+          <Pressable
+            onPress={() => router.push(`/goal/add?id=${goal.id}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Edit goal ini"
+          >
             <Text style={[styles.metaLink, { color: colors.textSecondary }]}>
               Edit goal
             </Text>
           </Pressable>
-          <Pressable onPress={handleDelete}>
+          <Pressable
+            onPress={handleDelete}
+            accessibilityRole="button"
+            accessibilityLabel="Hapus goal ini"
+          >
             <Text style={[styles.metaLink, { color: colors.danger }]}>
               Hapus goal
             </Text>
@@ -372,7 +385,7 @@ export default function GoalDetailScreen() {
           transactions.map((tx) => (
             <GlassCard
               key={tx.id}
-              tintColor={colors.surface + "A6"}
+              tintColor={withOpacity(colors.surface, 0.65)}
               style={styles.txCard}
             >
               <TransactionRow transaction={tx} />
@@ -440,6 +453,8 @@ export default function GoalDetailScreen() {
               <Pressable
                 onPress={closeSheet}
                 style={[styles.modalButton, styles.modalButtonGhost]}
+                accessibilityRole="button"
+                accessibilityLabel="Batalkan"
               >
                 <Text style={styles.modalButtonGhostText}>Batal</Text>
               </Pressable>
@@ -452,6 +467,8 @@ export default function GoalDetailScreen() {
                       action === "deposit" ? colors.deposit : colors.withdraw,
                   },
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Konfirmasi transaksi"
               >
                 <Text style={styles.actionButtonText}>Konfirmasi</Text>
               </Pressable>

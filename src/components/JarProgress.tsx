@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
-import { radius } from "../theme/colors";
+import { glassShineTint, radius } from '../theme/colors';
 import { useTheme } from "../theme/useTheme";
 import { formatIDR } from "../utils/currency";
 import { GlassCard } from "./GlassCard";
@@ -229,7 +229,7 @@ export function JarProgress({
           <GlassCard
             style={styles.rimGlass}
             radiusSize={radius.lg}
-            tintColor="rgba(255,255,255,0.25)"
+            tintColor={glassShineTint}
           />
 
           {/* Info di tengah toples */}

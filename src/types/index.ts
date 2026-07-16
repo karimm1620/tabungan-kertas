@@ -5,9 +5,7 @@ export interface Goal {
   name: string;
   targetAmount: number;
   currentAmount: number;
-  /** URI lokal ke file gambar yang sudah di-copy ke sandbox app (bukan cache picker) */
   imageUri?: string;
-  /** Dipakai kalau user memilih emoji, bukan gambar */
   emoji?: string;
   accent: AccentKey;
   createdAt: number;

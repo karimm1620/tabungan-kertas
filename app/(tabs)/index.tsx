@@ -208,6 +208,8 @@ export default function GoalsScreen() {
             onPress={() => setReminderSheetOpen(true)}
             style={styles.iconButton}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Pengaturan pengingat menabung"
           >
             <Text style={{ fontSize: 18 }}>🔔</Text>
           </Pressable>
@@ -215,6 +217,8 @@ export default function GoalsScreen() {
             onPress={() => router.push("/goal/add")}
             style={styles.addButton}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Tambah goal tabungan baru"
           >
             <Text style={styles.addButtonText}>+</Text>
           </Pressable>
@@ -241,6 +245,9 @@ export default function GoalsScreen() {
                   key={option.key}
                   onPress={() => setSortOption(option.key)}
                   style={[styles.segment, isActive && styles.segmentActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Urutkan berdasarkan ${option.label}`}
+                  accessibilityState={{ selected: isActive }}
                 >
                   <Text
                     style={[
@@ -262,6 +269,9 @@ export default function GoalsScreen() {
               styles.filterChip,
               showCompletedOnly && styles.filterChipActive,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Filter goal yang sudah selesai"
+            accessibilityState={{ selected: showCompletedOnly }}
           >
             <Text
               style={[

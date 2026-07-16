@@ -1,14 +1,17 @@
-import React, { useMemo } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { spacing } from '../../src/theme/colors';
-import { useTheme } from '../../src/theme/useTheme';
-import { useGoalsStore } from '../../src/store/useGoalsStore';
-import { GlassCard } from '../../src/components/GlassCard';
-import { TransactionRow } from '../../src/components/TransactionRow';
-import { EmptyState } from '../../src/components/EmptyState';
-import { FLOATING_TAB_BAR_HEIGHT, FLOATING_TAB_BAR_MARGIN } from '../../src/components/FloatingTabBar';
-import type { Transaction } from '../../src/types';
+import React, { useMemo } from "react";
+import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { EmptyState } from "../../src/components/EmptyState";
+import {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MARGIN,
+} from "../../src/components/FloatingTabBar";
+import { GlassCard } from "../../src/components/GlassCard";
+import { TransactionRow } from "../../src/components/TransactionRow";
+import { useGoalsStore } from "../../src/store/useGoalsStore";
+import { spacing, withOpacity } from "../../src/theme/colors";
+import { useTheme } from "../../src/theme/useTheme";
+import type { Transaction } from "../../src/types";
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -18,7 +21,7 @@ export default function HistoryScreen() {
 
   const sorted = useMemo(
     () => [...transactions].sort((a, b) => b.createdAt - a.createdAt),
-    [transactions]
+    [transactions],
   );
 
   const goalNameById = useMemo(() => {
@@ -44,20 +47,29 @@ export default function HistoryScreen() {
         },
         listContent: {
           paddingTop: spacing.lg,
-          paddingBottom: insets.bottom + FLOATING_TAB_BAR_MARGIN + FLOATING_TAB_BAR_HEIGHT + spacing.lg,
+          paddingBottom:
+            insets.bottom +
+            FLOATING_TAB_BAR_MARGIN +
+            FLOATING_TAB_BAR_HEIGHT +
+            spacing.lg,
         },
         rowCard: {
           paddingHorizontal: spacing.md,
           marginBottom: spacing.sm,
         },
       }),
-    [colors, typography, insets.bottom]
+    [colors, typography, insets.bottom],
   );
 
   return (
-    <View key={isDark ? 'dark' : 'light'} style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
+    <View
+      key={isDark ? "dark" : "light"}
+      style={[styles.container, { paddingTop: insets.top + spacing.md }]}
+    >
       <Text style={styles.headerTitle}>History</Text>
-      <Text style={typography.caption}>Semua transaksi dari seluruh goal-mu</Text>
+      <Text style={typography.caption}>
+        Semua transaksi dari seluruh goal-mu
+      </Text>
 
       <FlatList<Transaction>
         data={sorted}
@@ -65,8 +77,14 @@ export default function HistoryScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <GlassCard tintColor={colors.surface + 'A6'} style={styles.rowCard}>
-            <TransactionRow transaction={item} goalName={goalNameById[item.goalId] ?? 'Goal terhapus'} />
+          <GlassCard
+            tintColor={withOpacity(colors.surface, 0.65)}
+            style={styles.rowCard}
+          >
+            <TransactionRow
+              transaction={item}
+              goalName={goalNameById[item.goalId] ?? "Goal terhapus"}
+            />
           </GlassCard>
         )}
         ListEmptyComponent={
