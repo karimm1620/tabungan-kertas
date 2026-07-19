@@ -44,4 +44,5 @@ app-example
 
 # Setup for continue project dev
 SETUP.md
-checkpoint-0a-android-only.patch
+checkpoint*
+ui-registry*

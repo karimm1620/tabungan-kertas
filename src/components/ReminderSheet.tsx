@@ -61,7 +61,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
       const granted = await checkNotificationPermission();
       if (!granted) {
         await cancelReminder(reminderNotificationId);
-        setReminder(false, reminderHour, reminderMinute, null);
+        await setReminder(false, reminderHour, reminderMinute, null);
         showAlert(
           "Reminder dinonaktifkan",
           "Izin notifikasi buat aplikasi ini kelihatannya udah gak aktif lagi. Aktifkan lagi kalau mau pakai reminder.",
@@ -90,7 +90,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     if (!value) {
       setBusy(true);
       await cancelReminder(reminderNotificationId);
-      setReminder(false, reminderHour, reminderMinute, null);
+      await setReminder(false, reminderHour, reminderMinute, null);
       setBusy(false);
       return;
     }
@@ -120,7 +120,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
       );
       return;
     }
-    setReminder(true, reminderHour, reminderMinute, id);
+    await setReminder(true, reminderHour, reminderMinute, id);
     setBusy(false);
   };
 
@@ -130,7 +130,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     await cancelReminder(reminderNotificationId);
     const id = await scheduleDailyReminder(hour, minute);
     if (id) {
-      setReminder(true, hour, minute, id);
+      await setReminder(true, hour, minute, id);
     }
     setBusy(false);
   };

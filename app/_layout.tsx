@@ -1,68 +1,106 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { initDatabase } from "../src/db/client";
+import { migrateFromAsyncStorageIfNeeded } from "../src/db/legacyMigration";
 import { useReducedMotion } from "../src/hooks/useReducedMotion";
 import { useGoalsStore } from "../src/store/useGoalsStore";
+import { useSettingsStore } from "../src/store/useSettingsStore";
 import { useTheme } from "../src/theme/useTheme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <RootLayoutContent />
+    </ErrorBoundary>
+  );
+}
+
+function RootLayoutContent() {
   const { colors, isDark } = useTheme();
-  const hasHydrated = useGoalsStore((state) => state.hasHydrated);
   const reducedMotion = useReducedMotion();
+  const [bootError, setBootError] = useState<unknown>(null);
+
+  const goalsHydrated = useGoalsStore((state) => state.hasHydrated);
+  const hydrateGoals = useGoalsStore((state) => state.hydrate);
+  const settingsHydrated = useSettingsStore((state) => state.hasHydrated);
+  const hydrateSettings = useSettingsStore((state) => state.hydrate);
+
+  const ready = goalsHydrated && settingsHydrated;
+
+  // Urutan WAJIB: tabel harus ada dulu (initDatabase) sebelum migrasi baca-
+  // tulis ke tabel itu, dan migrasi harus selesai dulu sebelum hydrate baca
+  // data final (kalau ada data lama yang perlu dipindah).
+  useEffect(() => {
+    (async () => {
+      try {
+        await initDatabase();
+        await migrateFromAsyncStorageIfNeeded();
+        await Promise.all([hydrateGoals(), hydrateSettings()]);
+      } catch (error) {
+        setBootError(error);
+      }
+    })();
+  }, [hydrateGoals, hydrateSettings]);
 
   useEffect(() => {
-    if (hasHydrated) {
+    if (ready) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [hasHydrated]);
+  }, [ready]);
 
-  if (!hasHydrated) {
+  // Dilempar pas render (bukan cuma di-log) — supaya ErrorBoundary di
+  // `RootLayout` (parent component ini) yang nangkep. Bootstrap DB gagal
+  // itu fatal, gak masuk akal nerusin app tanpa data ke-load.
+  if (bootError) {
+    throw bootError;
+  }
+
+  if (!ready) {
     return null;
   }
 
   return (
-    <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <StatusBar style={isDark ? "light" : "dark"} />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.background },
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="goal/[id]"
+            options={{
+              headerShown: true,
+              title: "",
+              headerTransparent: true,
+              headerTintColor: colors.textPrimary,
             }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="goal/[id]"
-              options={{
-                headerShown: true,
-                title: "",
-                headerTransparent: true,
-                headerTintColor: colors.textPrimary,
-              }}
-            />
-            <Stack.Screen
-              name="goal/add"
-              options={{
-                presentation: "modal",
-                headerShown: true,
-                title: "Goal Baru",
-                headerStyle: { backgroundColor: colors.surface },
-                headerTintColor: colors.textPrimary,
-                // Reduce Motion aktif -> gak ada transisi geser sama sekali.
-                // Kalau enggak: masuk dari bawah (full-screen dialog M3).
-                animation: reducedMotion ? "none" : "slide_from_bottom",
-              }}
-            />
-          </Stack>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
+          />
+          <Stack.Screen
+            name="goal/add"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Goal Baru",
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.textPrimary,
+              // Reduce Motion aktif -> gak ada transisi geser sama sekali.
+              // Kalau enggak: masuk dari bawah (full-screen dialog M3).
+              animation: reducedMotion ? "none" : "slide_from_bottom",
+            }}
+          />
+        </Stack>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
