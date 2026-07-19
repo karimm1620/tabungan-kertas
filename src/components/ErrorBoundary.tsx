@@ -1,6 +1,6 @@
 import React from 'react';
 import { Appearance, Pressable, StyleSheet, Text, View } from 'react-native';
-import { accentByKey, darkColors, lightColors, radius, spacing } from '../theme/colors';
+import { accentByKey, errorFallbackColors, radius, spacing } from '../theme/colors';
 
 interface Props {
   children: React.ReactNode;
@@ -40,7 +40,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
 
     const isDark = Appearance.getColorScheme() === 'dark';
-    const colors = isDark ? darkColors : lightColors;
+    const colors = isDark ? errorFallbackColors.dark : errorFallbackColors.light;
 
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>

@@ -3,7 +3,6 @@ import {
   Animated,
   Easing,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,7 +10,7 @@ import {
 } from "react-native";
 import type { AppAlertButton } from "../hooks/useAppAlert";
 import { useReducedMotion } from "../hooks/useReducedMotion";
-import { accentByKey, radius, spacing } from "../theme/colors";
+import { radius, spacing } from "../theme/colors";
 import { m3Motion, m3Shape } from "../theme/material3/tokens";
 import { useTheme } from "../theme/useTheme";
 
@@ -50,7 +49,7 @@ export function AppAlert({
             useNativeDriver: true,
           }),
         ]).start();
-      } else if (Platform.OS === "android") {
+      } else {
         Animated.parallel([
           Animated.timing(opacity, {
             toValue: 1,
@@ -63,21 +62,6 @@ export function AppAlert({
             duration: m3Motion.duration.short4,
             easing: Easing.bezier(...m3Motion.easing.emphasizedDecelerate),
             useNativeDriver: true,
-          }),
-        ]).start();
-      } else {
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 160,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scale, {
-            toValue: 1,
-            useNativeDriver: true,
-            damping: 16,
-            stiffness: 220,
-            mass: 0.7,
           }),
         ]).start();
       }
@@ -128,17 +112,14 @@ export function AppAlert({
         },
         button: {
           flex: 1,
-          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
+          borderRadius: m3Shape.full,
           paddingVertical: spacing.md,
           alignItems: "center",
           backgroundColor: colors.surfaceMuted,
           overflow: "hidden",
         },
         buttonDefault: {
-          backgroundColor:
-            Platform.OS === "android"
-              ? (material3?.primary ?? accentByKey.lavender.deep)
-              : accentByKey.lavender.deep,
+          backgroundColor: material3.primary,
         },
         buttonDestructive: {
           backgroundColor: colors.danger,

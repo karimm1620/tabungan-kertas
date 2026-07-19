@@ -1,11 +1,5 @@
-import { Platform } from "react-native";
-import type { Typography } from "../typography";
-
-const fontFamily = Platform.select({ android: "sans-serif", default: "System" });
-const fontFamilyMedium = Platform.select({
-  android: "sans-serif-medium",
-  default: "System",
-});
+const fontFamily = "sans-serif";
+const fontFamilyMedium = "sans-serif-medium";
 
 /**
  * Full M3 type scale (15 role resmi dari spec Material Design 3).
@@ -45,11 +39,7 @@ export type M3FullTypeScale = ReturnType<typeof buildM3FullTypeScale>;
  * (display/title/subtitle/body/caption/label/amount) — supaya di Checkpoint 1
  * ini gak ada satupun komponen yang perlu diubah kodenya.
  */
-export function buildMaterial3Typography(
-  textPrimary: string,
-  textSecondary: string,
-): Typography {
-  const scale = buildM3FullTypeScale(textPrimary, textSecondary);
+function buildTypographyFromScale(scale: M3FullTypeScale) {
   return {
     display: scale.headlineMedium,
     title: scale.titleLarge,
@@ -59,4 +49,21 @@ export function buildMaterial3Typography(
     label: { ...scale.labelMedium, textTransform: "uppercase" as const },
     amount: scale.headlineSmall,
   };
+}
+
+/**
+ * 7 role semantik yang dipakai di seluruh komponen app ini
+ * (display/title/subtitle/body/caption/label/amount) — mapping dari full
+ * M3 type scale di atas. Satu-satunya sumber tipe `Typography` sekarang
+ * (dulu ada versi terpisah di `theme/typography.ts` buat iOS, sudah
+ * dihapus di Checkpoint 0 — lihat ui-registry.md).
+ */
+export type Typography = ReturnType<typeof buildTypographyFromScale>;
+
+export function buildMaterial3Typography(
+  textPrimary: string,
+  textSecondary: string,
+): Typography {
+  const scale = buildM3FullTypeScale(textPrimary, textSecondary);
+  return buildTypographyFromScale(scale);
 }

@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Chip } from "../../src/components/Chip";
@@ -12,7 +12,7 @@ import { GlassCard } from "../../src/components/GlassCard";
 import { GoalCard } from "../../src/components/GoalCard";
 import { ReminderSheet } from "../../src/components/ReminderSheet";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
-import { accentByKey, radius, spacing } from "../../src/theme/colors";
+import { radius, spacing } from "../../src/theme/colors";
 import { useTheme } from "../../src/theme/useTheme";
 import type { Goal } from "../../src/types";
 import { clampPercent, formatIDR } from "../../src/utils/currency";
@@ -104,20 +104,6 @@ export default function GoalsScreen() {
           justifyContent: "center",
           overflow: "hidden",
         },
-        addButton: {
-          width: 44,
-          height: 44,
-          borderRadius: radius.pill,
-          backgroundColor: accentByKey.lavender.deep,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        addButtonText: {
-          color: colors.textInverse,
-          fontSize: 24,
-          fontWeight: "600",
-          marginTop: -2,
-        },
         summaryCard: {
           padding: spacing.lg,
           marginBottom: spacing.lg,
@@ -128,12 +114,6 @@ export default function GoalsScreen() {
         summaryTarget: {
           ...typography.caption,
           marginTop: spacing.xs,
-        },
-        controlsRow: {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: spacing.sm,
-          marginBottom: spacing.md,
         },
         androidChipRow: {
           flexDirection: "row",
@@ -147,55 +127,6 @@ export default function GoalsScreen() {
           height: 20,
           backgroundColor: colors.glassBorder,
           marginHorizontal: spacing.xs,
-        },
-        segmentedControl: {
-          flex: 1,
-          flexDirection: "row",
-          alignItems: "center",
-          height: 40,
-          borderRadius: radius.pill,
-          backgroundColor: colors.surfaceMuted,
-          padding: 3,
-        },
-        segment: {
-          flex: 1,
-          height: "100%",
-          borderRadius: radius.pill,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        segmentActive: {
-          backgroundColor: accentByKey.lavender.base,
-        },
-        segmentText: {
-          ...typography.caption,
-          fontWeight: "600",
-          color: colors.textSecondary,
-        },
-        segmentTextActive: {
-          color: colors.textPrimary,
-        },
-        filterChip: {
-          height: 40,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.pill,
-          backgroundColor: colors.surfaceMuted,
-          alignItems: "center",
-          justifyContent: "center",
-          borderWidth: 1.5,
-          borderColor: "transparent",
-        },
-        filterChipActive: {
-          borderColor: accentByKey.lavender.deep,
-          backgroundColor: accentByKey.lavender.base,
-        },
-        filterChipText: {
-          ...typography.caption,
-          fontWeight: "600",
-          color: colors.textSecondary,
-        },
-        filterChipTextActive: {
-          color: colors.textPrimary,
         },
         listContent: {
           paddingBottom:
@@ -229,18 +160,6 @@ export default function GoalsScreen() {
           >
             <Text style={{ fontSize: 18 }}>🔔</Text>
           </Pressable>
-          {/* Android: aksi ini sekarang dipegang FAB (lihat (tabs)/_layout.tsx) */}
-          {Platform.OS !== "android" && (
-            <Pressable
-              onPress={() => router.push("/goal/add")}
-              style={styles.addButton}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Tambah goal tabungan baru"
-            >
-              <Text style={styles.addButtonText}>+</Text>
-            </Pressable>
-          )}
         </View>
       </View>
 
@@ -255,7 +174,7 @@ export default function GoalsScreen() {
         </Text>
       </GlassCard>
 
-      {goals.length > 0 && Platform.OS === "android" && (
+      {goals.length > 0 && (
         <View style={styles.androidChipRow}>
           {SORT_OPTIONS.map((option) => (
             <Chip
@@ -273,57 +192,6 @@ export default function GoalsScreen() {
             onPress={() => setShowCompletedOnly((prev) => !prev)}
             accessibilityLabel="Filter goal yang sudah selesai"
           />
-        </View>
-      )}
-
-      {goals.length > 0 && Platform.OS !== "android" && (
-        <View style={styles.controlsRow}>
-          <View style={styles.segmentedControl}>
-            {SORT_OPTIONS.map((option) => {
-              const isActive = sortOption === option.key;
-              return (
-                <Pressable
-                  key={option.key}
-                  onPress={() => setSortOption(option.key)}
-                  style={[styles.segment, isActive && styles.segmentActive]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Urutkan berdasarkan ${option.label}`}
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      isActive && styles.segmentTextActive,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Pressable
-            onPress={() => setShowCompletedOnly((prev) => !prev)}
-            style={[
-              styles.filterChip,
-              showCompletedOnly && styles.filterChipActive,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Filter goal yang sudah selesai"
-            accessibilityState={{ selected: showCompletedOnly }}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                showCompletedOnly && styles.filterChipTextActive,
-              ]}
-              numberOfLines={1}
-            >
-              Selesai
-            </Text>
-          </Pressable>
         </View>
       )}
 
@@ -349,9 +217,7 @@ export default function GoalsScreen() {
             description={
               showCompletedOnly
                 ? "Terus nabung sampai salah satu goal-mu mencapai 100%."
-                : Platform.OS === "android"
-                  ? "Tap tombol + di kanan bawah buat mulai nabung untuk wishlist pertamamu."
-                  : "Tap tombol + di pojok atas buat mulai nabung untuk wishlist pertamamu."
+                : "Tap tombol + di kanan bawah buat mulai nabung untuk wishlist pertamamu."
             }
           />
         }

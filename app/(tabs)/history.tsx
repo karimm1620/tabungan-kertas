@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "../../src/components/EmptyState";
 import {
@@ -9,7 +9,7 @@ import {
 import { GlassCard } from "../../src/components/GlassCard";
 import { TransactionRow } from "../../src/components/TransactionRow";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
-import { spacing, withOpacity } from "../../src/theme/colors";
+import { spacing } from "../../src/theme/colors";
 import { useTheme } from "../../src/theme/useTheme";
 import type { Transaction } from "../../src/types";
 
@@ -77,14 +77,7 @@ export default function HistoryScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <GlassCard
-            tintColor={
-              Platform.OS === "android"
-                ? colors.surface
-                : withOpacity(colors.surface, 0.65)
-            }
-            style={styles.rowCard}
-          >
+          <GlassCard tintColor={colors.surface} style={styles.rowCard}>
             <TransactionRow
               transaction={item}
               goalName={goalNameById[item.goalId] ?? "Goal terhapus"}

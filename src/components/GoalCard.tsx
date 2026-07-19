@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { getAccentColors, radius, spacing } from "../theme/colors";
 import { useTheme } from "../theme/useTheme";
 import type { Goal } from "../types";
@@ -24,10 +24,7 @@ export function GoalCard({ goal, onPress }: GoalCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.pressable,
-        Platform.OS !== "android" && { opacity: pressed ? 0.85 : 1 },
-      ]}
+      style={styles.pressable}
       android_ripple={{ color: colors.glassBorder }}
       accessibilityRole="button"
       accessibilityLabel={`${goal.name}, ${formatIDR(goal.currentAmount)} dari ${formatIDR(goal.targetAmount)}, ${Math.round(percent * 100)} persen tercapai`}

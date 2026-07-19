@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { UNDO_WINDOW_MS, useGoalsStore } from "../store/useGoalsStore";
-import { spacing, withOpacity } from "../theme/colors";
+import { spacing } from "../theme/colors";
 import { m3Motion } from "../theme/material3/tokens";
 import { useTheme } from "../theme/useTheme";
 import { useReducedMotion } from "../hooks/useReducedMotion";
@@ -27,19 +27,12 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
           duration: 1,
           useNativeDriver: true,
         }).start();
-      } else if (Platform.OS === "android") {
+      } else {
         Animated.timing(translateY, {
           toValue: 0,
           duration: m3Motion.duration.medium2,
           easing: Easing.bezier(...m3Motion.easing.emphasizedDecelerate),
           useNativeDriver: true,
-        }).start();
-      } else {
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 18,
-          stiffness: 200,
         }).start();
       }
 
@@ -51,15 +44,8 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
     } else if (mounted) {
       Animated.timing(translateY, {
         toValue: 120,
-        duration: reducedMotion
-          ? 1
-          : Platform.OS === "android"
-            ? m3Motion.duration.short3
-            : 200,
-        easing:
-          !reducedMotion && Platform.OS === "android"
-            ? Easing.bezier(...m3Motion.easing.emphasizedAccelerate)
-            : undefined,
+        duration: reducedMotion ? 1 : m3Motion.duration.short3,
+        easing: reducedMotion ? undefined : Easing.bezier(...m3Motion.easing.emphasizedAccelerate),
         useNativeDriver: true,
       }).start(() => setMounted(false));
     }
@@ -103,14 +89,7 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <Animated.View style={{ transform: [{ translateY }] }}>
-        <GlassCard
-          tintColor={
-            Platform.OS === "android"
-              ? colors.surface
-              : withOpacity(colors.surface, 0.94)
-          }
-          style={styles.card}
-        >
+        <GlassCard tintColor={colors.surface} style={styles.card}>
           <Text style={styles.text} numberOfLines={1}>
             {pendingDeletion?.goal.name} dihapus
           </Text>

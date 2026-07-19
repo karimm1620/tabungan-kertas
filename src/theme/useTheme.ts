@@ -1,47 +1,39 @@
-import { Platform, useColorScheme } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { useMemo } from 'react';
-import { lightColors, darkColors, ThemeColors } from './colors';
-import { buildTypography, Typography } from './typography';
+import { financialColors, ThemeColors } from './colors';
 import { useMaterial3Palette, mapMaterial3ToThemeColors } from './material3/colors';
-import { buildMaterial3Typography } from './material3/typography';
+import { buildMaterial3Typography, Typography } from './material3/typography';
 import type { Material3Scheme } from '@pchmn/expo-material3-theme';
 
 export interface AppTheme {
   colors: ThemeColors;
   typography: Typography;
   isDark: boolean;
-  material3?: Material3Scheme;
+  material3: Material3Scheme;
 }
 
+/**
+ * App ini Android-only — gak ada lagi cabang Platform.OS di sini (lihat
+ * ui-registry.md Checkpoint 0). `material3` sekarang SELALU ada, gak
+ * optional lagi — komponen yang sebelumnya pakai `material3?.x ?? fallback`
+ * bisa disederhanakan jadi `material3.x` langsung.
+ */
 export function useTheme(): AppTheme {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
-  const isAndroid = Platform.OS === 'android';
 
   const { scheme: material3Scheme } = useMaterial3Palette(isDark);
+  const keep = isDark ? financialColors.dark : financialColors.light;
 
-  const baseColors = isDark ? darkColors : lightColors;
+  const colors = useMemo<ThemeColors>(
+    () => mapMaterial3ToThemeColors(material3Scheme, keep, isDark),
+    [material3Scheme, keep, isDark],
+  );
 
-  const colors = useMemo<ThemeColors>(() => {
-    if (!isAndroid) return baseColors;
-    return mapMaterial3ToThemeColors(
-      material3Scheme,
-      { deposit: baseColors.deposit, withdraw: baseColors.withdraw },
-      isDark,
-    );
-  }, [isAndroid, baseColors, material3Scheme, isDark]);
+  const typography = useMemo<Typography>(
+    () => buildMaterial3Typography(colors.textPrimary, colors.textSecondary),
+    [colors],
+  );
 
-  const typography = useMemo<Typography>(() => {
-    if (isAndroid) {
-      return buildMaterial3Typography(colors.textPrimary, colors.textSecondary);
-    }
-    return buildTypography(colors.textPrimary, colors.textSecondary);
-  }, [isAndroid, colors]);
-
-  return {
-    colors,
-    typography,
-    isDark,
-    material3: isAndroid ? material3Scheme : undefined,
-  };
+  return { colors, typography, isDark, material3: material3Scheme };
 }

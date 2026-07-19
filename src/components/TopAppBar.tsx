@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { spacing } from "../theme/colors";
 import { m3ElevationStyle } from "../theme/material3/tokens";
@@ -21,14 +21,13 @@ interface TopAppBarProps {
 export function TopAppBar({ title, onBack, actions = [], elevated = false }: TopAppBarProps) {
   const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
-  const isAndroid = Platform.OS === "android";
 
   return (
     <View
       style={[
         styles.bar,
-        isAndroid && elevated ? m3ElevationStyle("level2") : null,
-        { backgroundColor: colors.surface, paddingTop: insets.top, justifyContent: isAndroid ? "flex-start" : "center" },
+        elevated ? m3ElevationStyle("level2") : null,
+        { backgroundColor: colors.surface, paddingTop: insets.top },
       ]}
     >
       {onBack && (
@@ -44,7 +43,7 @@ export function TopAppBar({ title, onBack, actions = [], elevated = false }: Top
         </Pressable>
       )}
 
-      <Text style={[typography.title, styles.title, !isAndroid && styles.titleCentered]} numberOfLines={1}>
+      <Text style={[typography.title, styles.title]} numberOfLines={1}>
         {title}
       </Text>
 
@@ -68,9 +67,8 @@ export function TopAppBar({ title, onBack, actions = [], elevated = false }: Top
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: "row", alignItems: "center", minHeight: 56, paddingHorizontal: spacing.sm },
+  bar: { flexDirection: "row", alignItems: "center", minHeight: 56, paddingHorizontal: spacing.sm, justifyContent: "flex-start" },
   title: { flex: 1, marginLeft: spacing.sm },
-  titleCentered: { textAlign: "center", marginLeft: 0 },
   actions: { flexDirection: "row", alignItems: "center" },
   iconButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20 },
 });
