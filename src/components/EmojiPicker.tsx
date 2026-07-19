@@ -1,12 +1,11 @@
 import React, { useMemo } from "react";
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
 } from "react-native";
-import { accentByKey, radius, spacing } from "../theme/colors";
+import { radius, spacing } from "../theme/colors";
 import { useTheme } from "../theme/useTheme";
 
 const EMOJI_OPTIONS = [
@@ -63,14 +62,8 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
           overflow: "hidden",
         },
         itemActive: {
-          borderColor:
-            Platform.OS === "android"
-              ? (material3?.primary ?? accentByKey.lavender.deep)
-              : accentByKey.lavender.deep,
-          backgroundColor:
-            Platform.OS === "android"
-              ? (material3?.secondaryContainer ?? accentByKey.lavender.base)
-              : accentByKey.lavender.base,
+          borderColor: material3.primary,
+          backgroundColor: material3.secondaryContainer,
         },
         emoji: {
           fontSize: 22,

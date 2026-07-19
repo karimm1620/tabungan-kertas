@@ -43,11 +43,7 @@ export function mapMaterial3ToThemeColors(
   };
 }
 
-/**
- * Hook utama buat ambil M3 dynamic color di Android. Panggil TANPA syarat
- * (React hook rule) — hasilnya cuma DIPAKAI kalau Platform.OS === 'android',
- * pemilihan cabang dilakukan di `useTheme()`.
- */
+/** Hook utama buat ambil M3 dynamic color — app ini Android-only, jadi selalu dipakai. */
 export function useMaterial3Palette(isDark: boolean) {
   const { theme } = useMaterial3Theme({
     fallbackSourceColor: MATERIAL3_FALLBACK_SEED,

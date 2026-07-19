@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -173,7 +172,7 @@ export default function AddGoalScreen() {
         input: {
           ...typography.body,
           backgroundColor: colors.surface,
-          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
+          borderRadius: m3Shape.extraSmall,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.md,
           borderWidth: 1,
@@ -183,7 +182,7 @@ export default function AddGoalScreen() {
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: colors.surface,
-          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
+          borderRadius: m3Shape.extraSmall,
           borderWidth: 1,
           borderColor: colors.glassBorder,
           paddingHorizontal: spacing.md,
@@ -200,32 +199,22 @@ export default function AddGoalScreen() {
         },
         saveButton: {
           marginTop: spacing.xl,
-          backgroundColor:
-            Platform.OS === "android"
-              ? (material3?.primary ?? accentByKey.lavender.deep)
-              : accentByKey.lavender.deep,
-          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
+          backgroundColor: material3.primary,
+          borderRadius: m3Shape.full,
           paddingVertical: spacing.md,
           alignItems: "center",
           overflow: "hidden",
         },
         saveButtonText: {
           ...typography.subtitle,
-          color:
-            Platform.OS === "android"
-              ? (material3?.onPrimary ?? colors.textInverse)
-              : colors.textInverse,
+          color: material3.onPrimary,
         },
       }),
     [colors, typography, material3],
   );
 
   return (
-    <KeyboardAvoidingView
-      key={isDark ? "dark" : "light"}
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <KeyboardAvoidingView key={isDark ? "dark" : "light"} style={{ flex: 1 }}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -298,9 +287,7 @@ export default function AddGoalScreen() {
           accessibilityLabel={
             isEditMode ? "Simpan perubahan goal" : "Buat goal baru"
           }
-          android_ripple={{
-            color: material3 ? withOpacity(material3.onPrimary, 0.24) : undefined,
-          }}
+          android_ripple={{ color: withOpacity(material3.onPrimary, 0.24) }}
         >
           <Text style={styles.saveButtonText}>
             {isEditMode ? "Simpan Perubahan" : "Buat Goal"}

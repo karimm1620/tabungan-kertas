@@ -7,9 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tabungankertas",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#D9C9F2",

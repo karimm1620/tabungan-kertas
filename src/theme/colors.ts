@@ -14,44 +14,26 @@ export interface ThemeColors {
   overlayScrim: string;
 }
 
-export const lightColors: ThemeColors = {
-  background: '#F6F4FB',
-  surface: '#FFFFFF',
-  surfaceMuted: '#FBFAFE',
-
-  glassTintLight: 'rgba(255,255,255,0.55)',
-  glassTintLavender: 'rgba(216,199,240,0.35)',
-  glassBorder: 'rgba(58,53,80,0.08)',
-
-  deposit: '#6FBFA6',
-  withdraw: '#EE7FA0',
-
-  textPrimary: '#332E4A',
-  textSecondary: '#8B84A0',
-  textInverse: '#FFFFFF',
-
-  danger: '#E8607F',
-  overlayScrim: 'rgba(51,46,74,0.35)',
+/**
+ * Warna semantik finansial (deposit/withdraw) — SENGAJA TETAP STATIS, gak
+ * ikut Material You dynamic color. Alasan: hijau=masuk, pink=keluar harus
+ * konsisten dikenali user kapan pun, gak boleh geser cuma karena ganti
+ * wallpaper. Lihat ui-registry.md bagian Checkpoint 0 (Android-only cleanup).
+ */
+export const financialColors = {
+  light: { deposit: '#6FBFA6', withdraw: '#EE7FA0' },
+  dark: { deposit: '#7FD1B8', withdraw: '#F294B0' },
 };
 
-export const darkColors: ThemeColors = {
-  background: '#17151F',
-  surface: '#211E2C',
-  surfaceMuted: '#2A2636',
-
-  glassTintLight: 'rgba(255,255,255,0.07)',
-  glassTintLavender: 'rgba(180,160,220,0.14)',
-  glassBorder: 'rgba(255,255,255,0.12)',
-
-  deposit: '#7FD1B8',
-  withdraw: '#F294B0',
-
-  textPrimary: '#F4F2FA',
-  textSecondary: '#A79FBF',
-  textInverse: '#FFFFFF',
-
-  danger: '#FF8FA8',
-  overlayScrim: 'rgba(0,0,0,0.6)',
+/**
+ * Fallback statis KHUSUS buat `ErrorBoundary` — itu class component, gak
+ * bisa pakai hook `useMaterial3Theme()` (React hook rule), jadi gak bisa
+ * ikut dynamic color. Bukan representasi warna app yang beroperasi
+ * sehari-hari, cuma buat fallback screen error yang jarang muncul.
+ */
+export const errorFallbackColors = {
+  light: { background: '#F6F4FB', textPrimary: '#332E4A', textSecondary: '#8B84A0' },
+  dark: { background: '#17151F', textPrimary: '#F4F2FA', textSecondary: '#A79FBF' },
 };
 
 export type AccentKey = 'mint' | 'peach' | 'lavender' | 'rose' | 'sky';

@@ -1,5 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 
 export let isNotificationsAvailable = true;
 
@@ -16,14 +15,14 @@ try {
   isNotificationsAvailable = false;
   console.warn(
     '[notifications] expo-notifications tidak tersedia di environment ini ' +
-      '(kemungkinan Expo Go di Android, tidak didukung sejak SDK 53). ' +
+      '(kemungkinan Expo Go, tidak didukung sejak SDK 53). ' +
       'Fitur reminder butuh development build. Detail:',
     error
   );
 }
 
 async function ensureAndroidChannel() {
-  if (!isNotificationsAvailable || Platform.OS !== 'android') return;
+  if (!isNotificationsAvailable) return;
   try {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Pengingat Menabung',

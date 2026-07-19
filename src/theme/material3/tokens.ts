@@ -1,9 +1,5 @@
 /**
  * Material 3 Expressive — design tokens murni (tidak bergantung warna).
- * File ini KHUSUS dipakai di cabang Android. Jangan diimport dari kode iOS —
- * shape/elevation iOS tetap pakai `radius` dari `theme/colors.ts` (Liquid Glass
- * punya bahasa bentuk sendiri, jangan dicampur).
- *
  * Sumber: Material Design 3 shape scale & elevation spec.
  */
 

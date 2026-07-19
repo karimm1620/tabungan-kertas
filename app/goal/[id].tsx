@@ -4,7 +4,6 @@ import {
   Animated,
   Keyboard,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -73,22 +72,17 @@ export default function GoalDetailScreen() {
   const keyboardOffset = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const showEvent =
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent =
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const showSub = Keyboard.addListener(showEvent, (e) => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
       Animated.timing(keyboardOffset, {
         toValue: e.endCoordinates.height,
-        duration: Platform.OS === "ios" ? (e.duration ?? 250) : 200,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     });
-    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
       Animated.timing(keyboardOffset, {
         toValue: 0,
-        duration: Platform.OS === "ios" ? (e?.duration ?? 250) : 200,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     });
@@ -124,7 +118,7 @@ export default function GoalDetailScreen() {
         },
         actionButton: {
           flex: 1,
-          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
+          borderRadius: m3Shape.full,
           paddingVertical: spacing.md,
           alignItems: "center",
           overflow: "hidden",
@@ -164,13 +158,11 @@ export default function GoalDetailScreen() {
         },
         sheetCard: {
           backgroundColor: colors.surface,
-          borderTopLeftRadius:
-            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
-          borderTopRightRadius:
-            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
+          borderTopLeftRadius: m3Shape.extraLarge,
+          borderTopRightRadius: m3Shape.extraLarge,
           padding: spacing.lg,
           paddingBottom: spacing.lg + insets.bottom,
-          ...(Platform.OS === "android" ? m3ElevationStyle("level1") : null),
+          ...m3ElevationStyle("level1"),
         },
         grabber: {
           width: 40,
@@ -192,7 +184,7 @@ export default function GoalDetailScreen() {
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: colors.surfaceMuted,
-          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
+          borderRadius: m3Shape.extraSmall,
           borderWidth: 1,
           borderColor: colors.glassBorder,
           paddingHorizontal: spacing.md,
@@ -211,7 +203,7 @@ export default function GoalDetailScreen() {
         noteInput: {
           ...typography.body,
           backgroundColor: colors.surfaceMuted,
-          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
+          borderRadius: m3Shape.extraSmall,
           borderWidth: 1,
           borderColor: colors.glassBorder,
           paddingHorizontal: spacing.md,
@@ -225,7 +217,7 @@ export default function GoalDetailScreen() {
         },
         modalButton: {
           flex: 1,
-          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
+          borderRadius: m3Shape.full,
           paddingVertical: spacing.md,
           alignItems: "center",
           overflow: "hidden",
@@ -362,15 +354,7 @@ export default function GoalDetailScreen() {
           />
         ) : (
           transactions.map((tx) => (
-            <GlassCard
-              key={tx.id}
-              tintColor={
-                Platform.OS === "android"
-                  ? colors.surface
-                  : withOpacity(colors.surface, 0.65)
-              }
-              style={styles.txCard}
-            >
+            <GlassCard key={tx.id} tintColor={colors.surface} style={styles.txCard}>
               <TransactionRow transaction={tx} />
             </GlassCard>
           ))

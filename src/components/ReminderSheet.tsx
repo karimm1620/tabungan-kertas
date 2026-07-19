@@ -3,7 +3,6 @@ import {
   Animated,
   Linking,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Switch,
@@ -83,7 +82,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     if (!isNotificationsAvailable) {
       showAlert(
         "Belum bisa dipakai di Expo Go",
-        "Fitur reminder butuh development build — expo-notifications tidak didukung penuh di Expo Go, khususnya di Android sejak SDK 53.",
+        "Fitur reminder butuh development build — expo-notifications tidak didukung penuh di Expo Go sejak SDK 53.",
       );
       return;
     }
@@ -143,13 +142,11 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
         sheetWrapper: { position: "absolute", left: 0, right: 0, bottom: 0 },
         sheetCard: {
           backgroundColor: colors.surface,
-          borderTopLeftRadius:
-            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
-          borderTopRightRadius:
-            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
+          borderTopLeftRadius: m3Shape.extraLarge,
+          borderTopRightRadius: m3Shape.extraLarge,
           padding: spacing.lg,
           paddingBottom: spacing.xl,
-          ...(Platform.OS === "android" ? m3ElevationStyle("level1") : null),
+          ...m3ElevationStyle("level1"),
         },
         grabber: {
           width: 40,
@@ -243,7 +240,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
 
             {!isNotificationsAvailable && (
               <Text style={styles.unavailableNotice}>
-                ⚠️ Belum bisa dipakai di Expo Go (khususnya Android). Fitur ini
+                ⚠️ Belum bisa dipakai di Expo Go. Fitur ini
                 butuh development build.
               </Text>
             )}
