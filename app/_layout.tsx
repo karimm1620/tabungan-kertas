@@ -2,9 +2,11 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { useReducedMotion } from "../src/hooks/useReducedMotion";
 import { useGoalsStore } from "../src/store/useGoalsStore";
 import { useTheme } from "../src/theme/useTheme";
 
@@ -13,6 +15,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const { colors, isDark } = useTheme();
   const hasHydrated = useGoalsStore((state) => state.hasHydrated);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (hasHydrated) {
@@ -53,6 +56,14 @@ export default function RootLayout() {
                 title: "Goal Baru",
                 headerStyle: { backgroundColor: colors.surface },
                 headerTintColor: colors.textPrimary,
+                // Reduce Motion aktif -> gak ada transisi geser sama sekali,
+                // di kedua platform. Kalau enggak: Android masuk dari bawah
+                // (full-screen dialog M3), iOS pakai default native modal-sheet.
+                animation: reducedMotion
+                  ? "none"
+                  : Platform.OS === "android"
+                    ? "slide_from_bottom"
+                    : undefined,
               }}
             />
           </Stack>

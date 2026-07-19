@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Switch,
@@ -10,8 +11,10 @@ import {
   View,
 } from "react-native";
 import { useAppAlert } from "../hooks/useAppAlert";
+import { useSheetMotion } from "../hooks/useSheetMotion";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { radius, spacing, withOpacity } from "../theme/colors";
+import { m3ElevationStyle, m3Shape } from "../theme/material3/tokens";
 import { useTheme } from "../theme/useTheme";
 import {
   cancelReminder,
@@ -48,42 +51,10 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
   const setReminder = useSettingsStore((s) => s.setReminder);
 
   const [busy, setBusy] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const sheetTranslateY = useRef(new Animated.Value(400)).current;
-
-  useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(sheetTranslateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 18,
-          stiffness: 180,
-          mass: 0.9,
-        }),
-      ]).start();
-    } else if (mounted) {
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(sheetTranslateY, {
-          toValue: 400,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setMounted(false));
-    }
-  }, [visible, backdropOpacity, mounted, sheetTranslateY]);
+  const { mounted, backdropOpacity, sheetTranslateY, dragHandlers } = useSheetMotion({
+    visible,
+    onDismiss: onClose,
+  });
 
   useEffect(() => {
     if (!visible || !reminderEnabled || !isNotificationsAvailable) return;
@@ -172,10 +143,13 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
         sheetWrapper: { position: "absolute", left: 0, right: 0, bottom: 0 },
         sheetCard: {
           backgroundColor: colors.surface,
-          borderTopLeftRadius: radius.xl,
-          borderTopRightRadius: radius.xl,
+          borderTopLeftRadius:
+            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
+          borderTopRightRadius:
+            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
           padding: spacing.lg,
           paddingBottom: spacing.xl,
+          ...(Platform.OS === "android" ? m3ElevationStyle("level1") : null),
         },
         grabber: {
           width: 40,
@@ -257,7 +231,11 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
               { transform: [{ translateY: sheetTranslateY }] },
             ]}
           >
-            <View style={styles.grabber} />
+            <View
+              style={styles.grabber}
+              hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
+              {...dragHandlers}
+            />
             <Text style={styles.title}>Pengingat Menabung</Text>
             <Text style={styles.description}>
               Dapat notifikasi harian biar gak lupa nabung.

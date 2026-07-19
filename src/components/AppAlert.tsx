@@ -1,14 +1,18 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
+  Easing,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import type { AppAlertButton } from "../hooks/useAppAlert";
+import { useReducedMotion } from "../hooks/useReducedMotion";
 import { accentByKey, radius, spacing } from "../theme/colors";
+import { m3Motion, m3Shape } from "../theme/material3/tokens";
 import { useTheme } from "../theme/useTheme";
 
 interface AppAlertProps {
@@ -26,31 +30,62 @@ export function AppAlert({
   buttons,
   onClose,
 }: AppAlertProps) {
-  const { colors, typography } = useTheme();
+  const { colors, typography, material3 } = useTheme();
+  const reducedMotion = useReducedMotion();
   const scale = useRef(new Animated.Value(0.9)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          useNativeDriver: true,
-          damping: 16,
-          stiffness: 220,
-          mass: 0.7,
-        }),
-      ]).start();
+      if (reducedMotion) {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 1,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 1,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else if (Platform.OS === "android") {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: m3Motion.duration.short4,
+            easing: Easing.bezier(...m3Motion.easing.standardDecelerate),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: m3Motion.duration.short4,
+            easing: Easing.bezier(...m3Motion.easing.emphasizedDecelerate),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 160,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: true,
+            damping: 16,
+            stiffness: 220,
+            mass: 0.7,
+          }),
+        ]).start();
+      }
     } else {
       opacity.setValue(0);
       scale.setValue(0.9);
     }
-  }, [visible]);
+  }, [visible, reducedMotion, opacity, scale]);
 
   const styles = useMemo(
     () =>
@@ -93,13 +128,17 @@ export function AppAlert({
         },
         button: {
           flex: 1,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
           paddingVertical: spacing.md,
           alignItems: "center",
           backgroundColor: colors.surfaceMuted,
+          overflow: "hidden",
         },
         buttonDefault: {
-          backgroundColor: accentByKey.lavender.deep,
+          backgroundColor:
+            Platform.OS === "android"
+              ? (material3?.primary ?? accentByKey.lavender.deep)
+              : accentByKey.lavender.deep,
         },
         buttonDestructive: {
           backgroundColor: colors.danger,
@@ -113,7 +152,7 @@ export function AppAlert({
           color: "#FFFFFF",
         },
       }),
-    [colors, typography],
+    [colors, typography, material3],
   );
 
   const handlePress = (button: AppAlertButton) => {
@@ -157,6 +196,12 @@ export function AppAlert({
                     isDestructive && styles.buttonDestructive,
                     isDefault && styles.buttonDefault,
                   ]}
+                  android_ripple={{
+                    color:
+                      isDestructive || isDefault
+                        ? "rgba(255,255,255,0.24)"
+                        : colors.glassBorder,
+                  }}
                 >
                   <Text
                     style={

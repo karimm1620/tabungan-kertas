@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { radius, spacing } from "../theme/colors";
+import { radius, spacing, withOpacity } from "../theme/colors";
 import { useTheme } from "../theme/useTheme";
 import type { Transaction } from "../types";
 import { formatIDR } from "../utils/currency";
@@ -35,7 +35,7 @@ export function TransactionRow({ transaction, goalName }: TransactionRowProps) {
 
   return (
     <View style={styles.row}>
-      <View style={[styles.iconWrap, { backgroundColor: color + "26" }]}>
+      <View style={[styles.iconWrap, { backgroundColor: withOpacity(color, 0.15) }]}>
         <Text style={[styles.icon, { color }]}>{icon}</Text>
       </View>
       <View style={styles.info}>

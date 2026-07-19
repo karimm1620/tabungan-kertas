@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "../../src/components/EmptyState";
 import {
@@ -78,7 +78,11 @@ export default function HistoryScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <GlassCard
-            tintColor={withOpacity(colors.surface, 0.65)}
+            tintColor={
+              Platform.OS === "android"
+                ? colors.surface
+                : withOpacity(colors.surface, 0.65)
+            }
             style={styles.rowCard}
           >
             <TransactionRow

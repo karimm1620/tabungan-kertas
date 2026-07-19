@@ -15,7 +15,8 @@ import { AppAlert } from "../../src/components/AppAlert";
 import { EmojiPicker } from "../../src/components/EmojiPicker";
 import { useAppAlert } from "../../src/hooks/useAppAlert";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
-import { accentByKey, radius, spacing } from "../../src/theme/colors";
+import { accentByKey, radius, spacing, withOpacity } from "../../src/theme/colors";
+import { m3Shape } from "../../src/theme/material3/tokens";
 import { useTheme } from "../../src/theme/useTheme";
 import { formatThousands, parseThousands } from "../../src/utils/currency";
 import {
@@ -28,7 +29,7 @@ export default function AddGoalScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEditMode = !!id;
-  const { colors, typography, isDark } = useTheme();
+  const { colors, typography, isDark, material3 } = useTheme();
   const { alertState, showAlert, hideAlert } = useAppAlert();
 
   const goal = useGoalsStore((state) =>
@@ -172,7 +173,7 @@ export default function AddGoalScreen() {
         input: {
           ...typography.body,
           backgroundColor: colors.surface,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.md,
           borderWidth: 1,
@@ -182,7 +183,7 @@ export default function AddGoalScreen() {
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: colors.surface,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
           borderWidth: 1,
           borderColor: colors.glassBorder,
           paddingHorizontal: spacing.md,
@@ -199,17 +200,24 @@ export default function AddGoalScreen() {
         },
         saveButton: {
           marginTop: spacing.xl,
-          backgroundColor: accentByKey.lavender.deep,
-          borderRadius: radius.md,
+          backgroundColor:
+            Platform.OS === "android"
+              ? (material3?.primary ?? accentByKey.lavender.deep)
+              : accentByKey.lavender.deep,
+          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
           paddingVertical: spacing.md,
           alignItems: "center",
+          overflow: "hidden",
         },
         saveButtonText: {
           ...typography.subtitle,
-          color: colors.textInverse,
+          color:
+            Platform.OS === "android"
+              ? (material3?.onPrimary ?? colors.textInverse)
+              : colors.textInverse,
         },
       }),
-    [colors, typography],
+    [colors, typography, material3],
   );
 
   return (
@@ -230,6 +238,7 @@ export default function AddGoalScreen() {
             style={styles.imagePicker}
             accessibilityRole="button"
             accessibilityLabel="Pilih gambar goal dari galeri"
+            android_ripple={{ color: colors.glassBorder }}
           >
             {imageUri ? (
               <Image source={{ uri: imageUri }} style={styles.imagePreview} />
@@ -289,6 +298,9 @@ export default function AddGoalScreen() {
           accessibilityLabel={
             isEditMode ? "Simpan perubahan goal" : "Buat goal baru"
           }
+          android_ripple={{
+            color: material3 ? withOpacity(material3.onPrimary, 0.24) : undefined,
+          }}
         >
           <Text style={styles.saveButtonText}>
             {isEditMode ? "Simpan Perubahan" : "Buat Goal"}

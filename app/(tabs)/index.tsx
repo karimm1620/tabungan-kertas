@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "../../src/components/EmptyState";
+import { Chip } from "../../src/components/Chip";
 import {
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MARGIN,
@@ -101,6 +102,7 @@ export default function GoalsScreen() {
           backgroundColor: colors.surfaceMuted,
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
         },
         addButton: {
           width: 44,
@@ -132,6 +134,19 @@ export default function GoalsScreen() {
           alignItems: "center",
           gap: spacing.sm,
           marginBottom: spacing.md,
+        },
+        androidChipRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: spacing.sm,
+          marginBottom: spacing.md,
+        },
+        androidChipDivider: {
+          width: 1,
+          height: 20,
+          backgroundColor: colors.glassBorder,
+          marginHorizontal: spacing.xs,
         },
         segmentedControl: {
           flex: 1,
@@ -210,23 +225,28 @@ export default function GoalsScreen() {
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Pengaturan pengingat menabung"
+            android_ripple={{ color: colors.glassBorder, borderless: false }}
           >
             <Text style={{ fontSize: 18 }}>🔔</Text>
           </Pressable>
-          <Pressable
-            onPress={() => router.push("/goal/add")}
-            style={styles.addButton}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Tambah goal tabungan baru"
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </Pressable>
+          {/* Android: aksi ini sekarang dipegang FAB (lihat (tabs)/_layout.tsx) */}
+          {Platform.OS !== "android" && (
+            <Pressable
+              onPress={() => router.push("/goal/add")}
+              style={styles.addButton}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Tambah goal tabungan baru"
+            >
+              <Text style={styles.addButtonText}>+</Text>
+            </Pressable>
+          )}
         </View>
       </View>
 
       <GlassCard
         tintColor={colors.glassTintLavender}
+        elevationLevel="level2"
         style={styles.summaryCard}
       >
         <Text style={styles.summaryAmount}>{formatIDR(totalSaved)}</Text>
@@ -235,7 +255,28 @@ export default function GoalsScreen() {
         </Text>
       </GlassCard>
 
-      {goals.length > 0 && (
+      {goals.length > 0 && Platform.OS === "android" && (
+        <View style={styles.androidChipRow}>
+          {SORT_OPTIONS.map((option) => (
+            <Chip
+              key={option.key}
+              label={option.label}
+              selected={sortOption === option.key}
+              onPress={() => setSortOption(option.key)}
+              accessibilityLabel={`Urutkan berdasarkan ${option.label}`}
+            />
+          ))}
+          <View style={styles.androidChipDivider} />
+          <Chip
+            label="Selesai"
+            selected={showCompletedOnly}
+            onPress={() => setShowCompletedOnly((prev) => !prev)}
+            accessibilityLabel="Filter goal yang sudah selesai"
+          />
+        </View>
+      )}
+
+      {goals.length > 0 && Platform.OS !== "android" && (
         <View style={styles.controlsRow}>
           <View style={styles.segmentedControl}>
             {SORT_OPTIONS.map((option) => {
@@ -308,7 +349,9 @@ export default function GoalsScreen() {
             description={
               showCompletedOnly
                 ? "Terus nabung sampai salah satu goal-mu mencapai 100%."
-                : "Tap tombol + di pojok atas buat mulai nabung untuk wishlist pertamamu."
+                : Platform.OS === "android"
+                  ? "Tap tombol + di kanan bawah buat mulai nabung untuk wishlist pertamamu."
+                  : "Tap tombol + di pojok atas buat mulai nabung untuk wishlist pertamamu."
             }
           />
         }

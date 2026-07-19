@@ -19,6 +19,7 @@ import { GlassCard } from "../../src/components/GlassCard";
 import { JarProgress } from "../../src/components/JarProgress";
 import { TransactionRow } from "../../src/components/TransactionRow";
 import { useAppAlert } from "../../src/hooks/useAppAlert";
+import { useSheetMotion } from "../../src/hooks/useSheetMotion";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
 import {
   getAccentColors,
@@ -26,6 +27,7 @@ import {
   spacing,
   withOpacity,
 } from "../../src/theme/colors";
+import { m3ElevationStyle, m3Shape } from "../../src/theme/material3/tokens";
 import { useTheme } from "../../src/theme/useTheme";
 import { formatThousands, parseThousands } from "../../src/utils/currency";
 
@@ -56,43 +58,19 @@ export default function GoalDetailScreen() {
   const [amountDisplay, setAmountDisplay] = useState("");
   const [note, setNote] = useState("");
 
-  const [sheetMounted, setSheetMounted] = useState(false);
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const sheetTranslateY = useRef(new Animated.Value(400)).current;
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
+  const closeSheet = () => {
+    setAction(null);
+    setAmountDisplay("");
+    setNote("");
+  };
 
-  useEffect(() => {
-    if (action !== null) {
-      setSheetMounted(true);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(sheetTranslateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 18,
-          stiffness: 180,
-          mass: 0.9,
-        }),
-      ]).start();
-    } else if (sheetMounted) {
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(sheetTranslateY, {
-          toValue: 400,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setSheetMounted(false));
-    }
-  }, [action, backdropOpacity, sheetMounted, sheetTranslateY]);
+  const {
+    mounted: sheetMounted,
+    backdropOpacity,
+    sheetTranslateY,
+    dragHandlers,
+  } = useSheetMotion({ visible: action !== null, onDismiss: closeSheet });
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const showEvent =
@@ -146,9 +124,10 @@ export default function GoalDetailScreen() {
         },
         actionButton: {
           flex: 1,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
           paddingVertical: spacing.md,
           alignItems: "center",
+          overflow: "hidden",
         },
         actionButtonText: {
           ...typography.subtitle,
@@ -185,10 +164,13 @@ export default function GoalDetailScreen() {
         },
         sheetCard: {
           backgroundColor: colors.surface,
-          borderTopLeftRadius: radius.xl,
-          borderTopRightRadius: radius.xl,
+          borderTopLeftRadius:
+            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
+          borderTopRightRadius:
+            Platform.OS === "android" ? m3Shape.extraLarge : radius.xl,
           padding: spacing.lg,
           paddingBottom: spacing.lg + insets.bottom,
+          ...(Platform.OS === "android" ? m3ElevationStyle("level1") : null),
         },
         grabber: {
           width: 40,
@@ -210,7 +192,7 @@ export default function GoalDetailScreen() {
           flexDirection: "row",
           alignItems: "center",
           backgroundColor: colors.surfaceMuted,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
           borderWidth: 1,
           borderColor: colors.glassBorder,
           paddingHorizontal: spacing.md,
@@ -229,7 +211,7 @@ export default function GoalDetailScreen() {
         noteInput: {
           ...typography.body,
           backgroundColor: colors.surfaceMuted,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.extraSmall : radius.md,
           borderWidth: 1,
           borderColor: colors.glassBorder,
           paddingHorizontal: spacing.md,
@@ -243,9 +225,10 @@ export default function GoalDetailScreen() {
         },
         modalButton: {
           flex: 1,
-          borderRadius: radius.md,
+          borderRadius: Platform.OS === "android" ? m3Shape.full : radius.md,
           paddingVertical: spacing.md,
           alignItems: "center",
+          overflow: "hidden",
         },
         modalButtonGhost: {
           backgroundColor: colors.surfaceMuted,
@@ -272,12 +255,6 @@ export default function GoalDetailScreen() {
       </View>
     );
   }
-
-  const closeSheet = () => {
-    setAction(null);
-    setAmountDisplay("");
-    setNote("");
-  };
 
   const handleConfirm = () => {
     const amount = parseThousands(amountDisplay);
@@ -340,6 +317,7 @@ export default function GoalDetailScreen() {
             onPress={() => setAction("deposit")}
             accessibilityRole="button"
             accessibilityLabel="Nabung ke goal ini"
+            android_ripple={{ color: withOpacity(colors.textInverse, 0.24) }}
           >
             <Text style={styles.actionButtonText}>+ Nabung</Text>
           </Pressable>
@@ -348,6 +326,7 @@ export default function GoalDetailScreen() {
             onPress={() => setAction("withdraw")}
             accessibilityRole="button"
             accessibilityLabel="Tarik tabungan dari goal ini"
+            android_ripple={{ color: withOpacity(colors.textInverse, 0.24) }}
           >
             <Text style={styles.actionButtonText}>- Tarik</Text>
           </Pressable>
@@ -385,7 +364,11 @@ export default function GoalDetailScreen() {
           transactions.map((tx) => (
             <GlassCard
               key={tx.id}
-              tintColor={withOpacity(colors.surface, 0.65)}
+              tintColor={
+                Platform.OS === "android"
+                  ? colors.surface
+                  : withOpacity(colors.surface, 0.65)
+              }
               style={styles.txCard}
             >
               <TransactionRow transaction={tx} />
@@ -417,7 +400,11 @@ export default function GoalDetailScreen() {
               },
             ]}
           >
-            <View style={styles.grabber} />
+            <View
+              style={styles.grabber}
+              hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
+              {...dragHandlers}
+            />
             <Text style={styles.modalTitle}>
               {action === "deposit" ? "Nabung ke goal ini" : "Tarik tabungan"}
             </Text>
@@ -455,6 +442,7 @@ export default function GoalDetailScreen() {
                 style={[styles.modalButton, styles.modalButtonGhost]}
                 accessibilityRole="button"
                 accessibilityLabel="Batalkan"
+                android_ripple={{ color: colors.glassBorder }}
               >
                 <Text style={styles.modalButtonGhostText}>Batal</Text>
               </Pressable>
@@ -469,6 +457,7 @@ export default function GoalDetailScreen() {
                 ]}
                 accessibilityRole="button"
                 accessibilityLabel="Konfirmasi transaksi"
+                android_ripple={{ color: withOpacity(colors.textInverse, 0.24) }}
               >
                 <Text style={styles.actionButtonText}>Konfirmasi</Text>
               </Pressable>

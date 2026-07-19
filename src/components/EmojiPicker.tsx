@@ -1,5 +1,11 @@
 import React, { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+} from "react-native";
 import { accentByKey, radius, spacing } from "../theme/colors";
 import { useTheme } from "../theme/useTheme";
 
@@ -35,7 +41,7 @@ interface EmojiPickerProps {
 }
 
 export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
-  const { colors } = useTheme();
+  const { colors, material3 } = useTheme();
 
   const styles = useMemo(
     () =>
@@ -54,16 +60,23 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
           marginRight: spacing.sm,
           borderWidth: 1.5,
           borderColor: "transparent",
+          overflow: "hidden",
         },
         itemActive: {
-          borderColor: accentByKey.lavender.deep,
-          backgroundColor: accentByKey.lavender.base,
+          borderColor:
+            Platform.OS === "android"
+              ? (material3?.primary ?? accentByKey.lavender.deep)
+              : accentByKey.lavender.deep,
+          backgroundColor:
+            Platform.OS === "android"
+              ? (material3?.secondaryContainer ?? accentByKey.lavender.base)
+              : accentByKey.lavender.base,
         },
         emoji: {
           fontSize: 22,
         },
       }),
-    [colors],
+    [colors, material3],
   );
 
   return (
@@ -82,6 +95,7 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
             accessibilityRole="button"
             accessibilityLabel={`Pilih ikon ${emoji}`}
             accessibilityState={{ selected: isActive }}
+            android_ripple={{ color: colors.glassBorder }}
           >
             <Text style={styles.emoji}>{emoji}</Text>
           </Pressable>
