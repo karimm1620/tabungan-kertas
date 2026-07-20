@@ -12,6 +12,7 @@ interface HabitRow {
   frequency_type: Habit["frequencyType"];
   weekdays_mask: number;
   reminder_time: string | null;
+  notification_id: string | null;
   best_streak: number;
   created_at: number;
   archived_at: number | null;
@@ -33,6 +34,7 @@ function rowToHabit(row: HabitRow): Habit {
     frequencyType: row.frequency_type,
     weekdaysMask: row.weekdays_mask,
     reminderTime: row.reminder_time,
+    notificationId: row.notification_id,
     bestStreak: row.best_streak,
     createdAt: row.created_at,
     archivedAt: row.archived_at,
@@ -59,6 +61,13 @@ interface HabitsState {
   archiveHabit: (id: string) => Promise<void>;
   unarchiveHabit: (id: string) => Promise<void>;
   deleteHabitPermanently: (id: string) => Promise<void>;
+  /**
+   * Set/clear ID notifikasi terjadwal yang aktif buat habit ini. Store CUMA
+   * persist ID-nya — actual schedule/cancel ke expo-notifications itu
+   * tanggung jawab UI layer (`habit/add.tsx`, `habit/[id].tsx`), konsisten
+   * sama pola `ReminderSheet.tsx` buat reminder savings.
+   */
+  setHabitNotificationId: (id: string, notificationId: string | null) => Promise<void>;
   /** Toggle selesai/belum buat HARI INI. Otomatis update `bestStreak` kalau streak baru lebih tinggi. */
   toggleHabitToday: (habitId: string) => Promise<void>;
 
@@ -114,6 +123,7 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
       frequencyType: input.frequencyType,
       weekdaysMask: input.weekdaysMask,
       reminderTime: input.reminderTime,
+      notificationId: null,
       bestStreak: 0,
       createdAt: Date.now(),
       archivedAt: null,
@@ -122,8 +132,8 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
     const db = await getDb();
     await db.runAsync(
       `INSERT INTO habits
-        (id, name, icon, color, frequency_type, weekdays_mask, reminder_time, best_streak, created_at, archived_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, name, icon, color, frequency_type, weekdays_mask, reminder_time, notification_id, best_streak, created_at, archived_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         newHabit.id,
         newHabit.name,
@@ -132,6 +142,7 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
         newHabit.frequencyType,
         newHabit.weekdaysMask,
         newHabit.reminderTime,
+        newHabit.notificationId,
         newHabit.bestStreak,
         newHabit.createdAt,
         newHabit.archivedAt,
@@ -212,6 +223,19 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
     set((state) => ({
       habits: state.habits.filter((h) => h.id !== id),
       habitLogs: state.habitLogs.filter((l) => l.habitId !== id),
+    }));
+  },
+
+  setHabitNotificationId: async (id, notificationId) => {
+    const db = await getDb();
+    await db.runAsync(
+      "UPDATE habits SET notification_id = ? WHERE id = ?",
+      [notificationId, id],
+    );
+    set((state) => ({
+      habits: state.habits.map((h) =>
+        h.id === id ? { ...h, notificationId } : h,
+      ),
     }));
   },
 

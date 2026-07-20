@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,6 +33,12 @@ import {
   isWeekdaySelected,
   toggleWeekdayBit,
 } from "../../src/utils/date";
+import {
+  cancelReminder,
+  isNotificationsAvailable,
+  requestNotificationPermission,
+  scheduleHabitReminder,
+} from "../../src/utils/notifications";
 
 const WEEKDAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 
@@ -57,6 +64,9 @@ export default function AddHabitScreen() {
   );
   const addHabit = useHabitsStore((s) => s.addHabit);
   const updateHabit = useHabitsStore((s) => s.updateHabit);
+  const setHabitNotificationId = useHabitsStore(
+    (s) => s.setHabitNotificationId,
+  );
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<HabitIconName>(HABIT_ICON_OPTIONS[0]);
@@ -99,6 +109,43 @@ export default function AddHabitScreen() {
       ? `${String(reminderHour).padStart(2, "0")}:${String(reminderMinute).padStart(2, "0")}`
       : null;
 
+    // Reminder lama (kalau ada, mode edit) selalu di-cancel dulu — baik
+    // karena reminder dimatiin, jamnya diganti, ATAU mau di-reschedule ulang
+    // di bawah. Lebih aman nyandingin fresh schedule daripada nyoba nge-diff
+    // "apa jam-nya beneran berubah" (murah dijalanin, gak ada downside).
+    if (isEditMode && habit?.notificationId) {
+      await cancelReminder(habit.notificationId);
+    }
+
+    let notificationId: string | null = null;
+
+    if (reminderEnabled) {
+      if (!isNotificationsAvailable) {
+        showAlert(
+          "Reminder gak tersedia",
+          "Fitur reminder butuh development build — expo-notifications gak didukung penuh di Expo Go sejak SDK 53. Habit tetap kesimpen, cuma remindernya belum aktif.",
+        );
+      } else {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          showAlert(
+            "Izin notifikasi diperlukan",
+            "Aktifkan izin notifikasi di pengaturan device supaya reminder bisa muncul. Habit tetap kesimpen, cuma remindernya belum aktif.",
+            [
+              { label: "Nanti", style: "cancel" },
+              { label: "Buka Pengaturan", onPress: () => Linking.openSettings() },
+            ],
+          );
+        } else {
+          notificationId = await scheduleHabitReminder(
+            trimmedName,
+            reminderHour,
+            reminderMinute,
+          );
+        }
+      }
+    }
+
     const input = {
       name: trimmedName,
       icon,
@@ -110,8 +157,12 @@ export default function AddHabitScreen() {
 
     if (isEditMode && id) {
       await updateHabit(id, input);
+      await setHabitNotificationId(id, notificationId);
     } else {
-      await addHabit(input);
+      const created = await addHabit(input);
+      if (notificationId) {
+        await setHabitNotificationId(created.id, notificationId);
+      }
     }
     router.back();
   };

@@ -21,11 +21,18 @@ try {
   );
 }
 
-async function ensureAndroidChannel() {
+/**
+ * Bikin notification channel Android kalau belum ada (aman dipanggil
+ * berkali-kali). Dipisah per-channel per-domain (savings vs habits) — biar
+ * user bisa atur suara/getar/visibility masing-masing independen lewat
+ * pengaturan notifikasi Android, dan biar "matiin notif tabungan" gak ikut
+ * matiin reminder habit atau sebaliknya.
+ */
+async function ensureChannel(channelId: string, name: string) {
   if (!isNotificationsAvailable) return;
   try {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Pengingat Menabung',
+    await Notifications.setNotificationChannelAsync(channelId, {
+      name,
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   } catch {
@@ -65,7 +72,7 @@ export async function checkNotificationPermission(): Promise<boolean> {
 export async function scheduleDailyReminder(hour: number, minute: number): Promise<string | null> {
   if (!isNotificationsAvailable) return null;
   try {
-    await ensureAndroidChannel();
+    await ensureChannel('savings', 'Pengingat Menabung');
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Waktunya menabung! 🐷',
@@ -74,6 +81,41 @@ export async function scheduleDailyReminder(hour: number, minute: number): Promi
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        channelId: 'savings',
+        hour,
+        minute,
+      },
+    });
+    return id;
+  } catch {
+    isNotificationsAvailable = false;
+    return null;
+  }
+}
+
+/**
+ * Jadwalkan reminder harian buat SATU habit spesifik (nama habit muncul di
+ * body notifikasi). Return identifier-nya (atau null kalau gagal) — WAJIB
+ * disimpan (lewat `useHabitsStore.setHabitNotificationId`) supaya bisa
+ * di-cancel lagi nanti (edit waktu, matiin reminder, archive, atau hapus).
+ */
+export async function scheduleHabitReminder(
+  habitName: string,
+  hour: number,
+  minute: number,
+): Promise<string | null> {
+  if (!isNotificationsAvailable) return null;
+  try {
+    await ensureChannel('habits', 'Pengingat Habit');
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `Waktunya "${habitName}" 💪`,
+        body: 'Tap buat langsung tandai selesai di Today.',
+        sound: 'default',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        channelId: 'habits',
         hour,
         minute,
       },

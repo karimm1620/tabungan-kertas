@@ -20,6 +20,12 @@ import {
   isWeekdaySelected,
   WEEKDAY_LABELS_SHORT,
 } from "../../src/utils/date";
+import {
+  cancelReminder,
+  isNotificationsAvailable,
+  requestNotificationPermission,
+  scheduleHabitReminder,
+} from "../../src/utils/notifications";
 
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +40,9 @@ export default function HabitDetailScreen() {
   const archiveHabit = useHabitsStore((s) => s.archiveHabit);
   const unarchiveHabit = useHabitsStore((s) => s.unarchiveHabit);
   const deleteHabitPermanently = useHabitsStore((s) => s.deleteHabitPermanently);
+  const setHabitNotificationId = useHabitsStore(
+    (s) => s.setHabitNotificationId,
+  );
 
   const completedDateKeys = useMemo(() => {
     if (!habit) return new Set<string>();
@@ -73,7 +82,19 @@ export default function HabitDetailScreen() {
 
   const handleToggleArchive = () => {
     if (habit.archivedAt) {
-      void unarchiveHabit(habit.id);
+      // Un-archive: kalau reminder-nya masih di-set, coba reschedule ulang —
+      // notification_id lama pasti udah null (di-clear pas archive di bawah).
+      void (async () => {
+        await unarchiveHabit(habit.id);
+        if (habit.reminderTime && isNotificationsAvailable) {
+          const granted = await requestNotificationPermission();
+          if (granted) {
+            const [h, m] = habit.reminderTime.split(":").map(Number);
+            const newId = await scheduleHabitReminder(habit.name, h, m);
+            if (newId) await setHabitNotificationId(habit.id, newId);
+          }
+        }
+      })();
       return;
     }
     showAlert(
@@ -84,6 +105,10 @@ export default function HabitDetailScreen() {
         {
           label: "Arsipkan",
           onPress: async () => {
+            if (habit.notificationId) {
+              await cancelReminder(habit.notificationId);
+              await setHabitNotificationId(habit.id, null);
+            }
             await archiveHabit(habit.id);
             router.back();
           },
@@ -102,6 +127,9 @@ export default function HabitDetailScreen() {
           label: "Hapus",
           style: "destructive",
           onPress: async () => {
+            if (habit.notificationId) {
+              await cancelReminder(habit.notificationId);
+            }
             await deleteHabitPermanently(habit.id);
             router.back();
           },

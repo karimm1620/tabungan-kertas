@@ -48,6 +48,8 @@ export interface Habit {
   weekdaysMask: WeekdaysMask;
   /** Format "HH:mm" 24 jam, null = gak ada reminder */
   reminderTime: string | null;
+  /** ID notifikasi terjadwal yang aktif (dari expo-notifications), null = gak ada yang lagi jalan */
+  notificationId: string | null;
   bestStreak: number;
   createdAt: number;
   archivedAt: number | null;

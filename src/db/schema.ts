@@ -11,6 +11,32 @@
  * `best_streak` di-cache karena itu historical max, aman di-update sekali
  * pas ke-detect streak baru lebih tinggi, gak perlu dihitung ulang tiap render.
  */
+/**
+ * Versi schema saat ini + daftar migration incremental. `initDatabase()` di
+ * `client.ts` jalanin migration yang versinya > `PRAGMA user_version`
+ * tersimpan, urut, lalu update PRAGMA-nya. Dipakai buat nambah kolom ke
+ * tabel yang UDAH ADA di device orang (CREATE TABLE IF NOT EXISTS di bawah
+ * cuma ngaruh ke instalasi baru — DB yang udah ke-create sebelumnya gak
+ * ikut ke-update strukturnya otomatis).
+ */
+export const SCHEMA_VERSION = 2;
+
+export const MIGRATIONS: { version: number; sql: string }[] = [
+  {
+    // v2 — notification_id per habit (Checkpoint 1: reminder habit).
+    version: 2,
+    sql: `ALTER TABLE habits ADD COLUMN notification_id TEXT;`,
+  },
+];
+
+// ⚠️ KONVENSI PENTING: base schema di bawah ini merepresentasikan shape
+// versi 1 (SCHEMA_VERSION awal project ini) — JANGAN diedit retroaktif tiap
+// ada kolom baru. Semua perubahan struktur SETELAH ini WAJIB lewat
+// `MIGRATIONS` di atas (nambah entry baru), bukan nyunting CREATE TABLE di
+// sini. Kalau kolom baru ditambahin di DUA tempat (base schema + migration),
+// instalasi baru bakal kena error "duplicate column" pas migration jalan,
+// karena migration selalu dieksekusi abis CREATE_TABLES_SQL tanpa peduli
+// apakah kolomnya udah ada duluan atau belum.
 export const CREATE_TABLES_SQL = `
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
