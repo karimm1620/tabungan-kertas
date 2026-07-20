@@ -39,7 +39,7 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
       const elapsed = Date.now() - pendingDeletion.deletedAt;
       const remaining = Math.max(0, UNDO_WINDOW_MS - elapsed);
       timerRef.current = setTimeout(() => {
-        commitPendingDeletion();
+        void commitPendingDeletion();
       }, remaining);
     } else if (mounted) {
       Animated.timing(translateY, {
@@ -94,7 +94,7 @@ export function UndoSnackbar({ bottomOffset = 0 }: { bottomOffset?: number }) {
             {pendingDeletion?.goal.name} dihapus
           </Text>
           <Pressable
-            onPress={undoDelete}
+            onPress={() => void undoDelete()}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Batalkan penghapusan goal"

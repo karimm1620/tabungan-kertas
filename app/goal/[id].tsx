@@ -248,7 +248,7 @@ export default function GoalDetailScreen() {
     );
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const amount = parseThousands(amountDisplay);
     if (amount <= 0) {
       showAlert("Jumlah belum diisi", "Masukkan nominal yang valid.");
@@ -256,10 +256,14 @@ export default function GoalDetailScreen() {
     }
 
     if (action === "deposit") {
-      deposit(goal.id, amount, note.trim() || undefined);
+      await deposit(goal.id, amount, note.trim() || undefined);
       closeSheet();
     } else if (action === "withdraw") {
-      const result = withdraw(goal.id, amount, note.trim() || undefined);
+      const result = await withdraw(
+        goal.id,
+        amount,
+        note.trim() || undefined,
+      );
       if (!result.ok) {
         showAlert("Tidak bisa menarik", result.error ?? "Terjadi kesalahan.");
         return;
@@ -277,8 +281,8 @@ export default function GoalDetailScreen() {
         {
           label: "Hapus",
           style: "destructive",
-          onPress: () => {
-            deleteGoal(goal.id);
+          onPress: async () => {
+            await deleteGoal(goal.id);
             router.back();
           },
         },

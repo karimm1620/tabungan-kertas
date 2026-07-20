@@ -92,7 +92,7 @@ export default function AddGoalScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedName = name.trim();
     const amount = parseThousands(targetDisplay);
 
@@ -109,14 +109,14 @@ export default function AddGoalScreen() {
     }
 
     if (isEditMode && id) {
-      updateGoal(id, {
+      await updateGoal(id, {
         name: trimmedName,
         targetAmount: amount,
         imageUri,
         emoji,
       });
     } else {
-      addGoal({ name: trimmedName, targetAmount: amount, imageUri, emoji });
+      await addGoal({ name: trimmedName, targetAmount: amount, imageUri, emoji });
     }
     savedSuccessfully.current = true;
     router.back();
