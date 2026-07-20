@@ -9,7 +9,9 @@ import { initDatabase } from "../src/db/client";
 import { migrateFromAsyncStorageIfNeeded } from "../src/db/legacyMigration";
 import { useReducedMotion } from "../src/hooks/useReducedMotion";
 import { useGoalsStore } from "../src/store/useGoalsStore";
+import { useHabitsStore } from "../src/store/useHabitsStore";
 import { useSettingsStore } from "../src/store/useSettingsStore";
+import { useTodosStore } from "../src/store/useTodosStore";
 import { useTheme } from "../src/theme/useTheme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -31,8 +33,13 @@ function RootLayoutContent() {
   const hydrateGoals = useGoalsStore((state) => state.hydrate);
   const settingsHydrated = useSettingsStore((state) => state.hasHydrated);
   const hydrateSettings = useSettingsStore((state) => state.hydrate);
+  const habitsHydrated = useHabitsStore((state) => state.hasHydrated);
+  const hydrateHabits = useHabitsStore((state) => state.hydrate);
+  const todosHydrated = useTodosStore((state) => state.hasHydrated);
+  const hydrateTodos = useTodosStore((state) => state.hydrate);
 
-  const ready = goalsHydrated && settingsHydrated;
+  const ready =
+    goalsHydrated && settingsHydrated && habitsHydrated && todosHydrated;
 
   // Urutan WAJIB: tabel harus ada dulu (initDatabase) sebelum migrasi baca-
   // tulis ke tabel itu, dan migrasi harus selesai dulu sebelum hydrate baca
@@ -42,12 +49,17 @@ function RootLayoutContent() {
       try {
         await initDatabase();
         await migrateFromAsyncStorageIfNeeded();
-        await Promise.all([hydrateGoals(), hydrateSettings()]);
+        await Promise.all([
+          hydrateGoals(),
+          hydrateSettings(),
+          hydrateHabits(),
+          hydrateTodos(),
+        ]);
       } catch (error) {
         setBootError(error);
       }
     })();
-  }, [hydrateGoals, hydrateSettings]);
+  }, [hydrateGoals, hydrateSettings, hydrateHabits, hydrateTodos]);
 
   useEffect(() => {
     if (ready) {

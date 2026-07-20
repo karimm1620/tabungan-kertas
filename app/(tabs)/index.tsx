@@ -1,232 +1,398 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CelebrationOverlay } from "../../src/components/CelebrationOverlay";
 import { EmptyState } from "../../src/components/EmptyState";
-import { Chip } from "../../src/components/Chip";
 import {
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MARGIN,
 } from "../../src/components/FloatingTabBar";
 import { GlassCard } from "../../src/components/GlassCard";
-import { GoalCard } from "../../src/components/GoalCard";
-import { ReminderSheet } from "../../src/components/ReminderSheet";
-import { useGoalsStore } from "../../src/store/useGoalsStore";
-import { radius, spacing } from "../../src/theme/colors";
+import { ProgressBar } from "../../src/components/ProgressBar";
+import { useHabitsStore } from "../../src/store/useHabitsStore";
+import { useTodosStore } from "../../src/store/useTodosStore";
+import { spacing } from "../../src/theme/colors";
+import { m3Shape } from "../../src/theme/material3/tokens";
 import { useTheme } from "../../src/theme/useTheme";
-import type { Goal } from "../../src/types";
-import { clampPercent, formatIDR } from "../../src/utils/currency";
+import type { Habit } from "../../src/types";
+import {
+  calculateCurrentStreak,
+  formatIndonesianDate,
+  getLocalDateKey,
+  isHabitDueOnDate,
+} from "../../src/utils/date";
 
-type SortOption = "newest" | "closest" | "az";
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
-const SORT_OPTIONS: { key: SortOption; label: string }[] = [
-  { key: "newest", label: "Terbaru" },
-  { key: "closest", label: "Terdekat" },
-  { key: "az", label: "A-Z" },
-];
-
-export default function GoalsScreen() {
+export default function TodayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, typography, isDark } = useTheme();
-  const goals = useGoalsStore((state) => state.goals);
+  const { colors, typography, material3, isDark } = useTheme();
 
-  const [sortOption, setSortOption] = useState<SortOption>("newest");
-  const [showCompletedOnly, setShowCompletedOnly] = useState(false);
-  const [reminderSheetOpen, setReminderSheetOpen] = useState(false);
+  // Selalu select STATE MENTAH dari store (referensi stabil), turunkan
+  // sendiri lewat useMemo di bawah — JANGAN panggil method getXxx() store
+  // sebagai selector (lihat catatan di useHabitsStore.ts / useTodosStore.ts).
+  const habits = useHabitsStore((s) => s.habits);
+  const habitLogs = useHabitsStore((s) => s.habitLogs);
+  const toggleHabitToday = useHabitsStore((s) => s.toggleHabitToday);
 
-  const totalSaved = useMemo(
-    () => goals.reduce((sum, g) => sum + g.currentAmount, 0),
-    [goals],
+  const todos = useTodosStore((s) => s.todos);
+  const toggleTodo = useTodosStore((s) => s.toggleTodo);
+  const addTodo = useTodosStore((s) => s.addTodo);
+  const deleteTodo = useTodosStore((s) => s.deleteTodo);
+
+  const [newTodoTitle, setNewTodoTitle] = useState("");
+
+  const todayKey = getLocalDateKey();
+
+  const todayHabits = useMemo(
+    () => habits.filter((h) => !h.archivedAt && isHabitDueOnDate(h, todayKey)),
+    [habits, todayKey],
   );
-  const totalTarget = useMemo(
-    () => goals.reduce((sum, g) => sum + g.targetAmount, 0),
-    [goals],
-  );
 
-  const displayedGoals = useMemo(() => {
-    let list = [...goals];
+  const completedHabitIdsToday = useMemo(() => {
+    const set = new Set<string>();
+    for (const log of habitLogs) {
+      if (log.date === todayKey) set.add(log.habitId);
+    }
+    return set;
+  }, [habitLogs, todayKey]);
 
-    if (showCompletedOnly) {
-      list = list.filter(
-        (g) => clampPercent(g.currentAmount, g.targetAmount) >= 1,
+  const streakByHabitId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const habit of todayHabits) {
+      const completedDates = new Set(
+        habitLogs.filter((l) => l.habitId === habit.id).map((l) => l.date),
       );
+      map.set(habit.id, calculateCurrentStreak(habit, completedDates));
     }
+    return map;
+  }, [todayHabits, habitLogs]);
 
-    switch (sortOption) {
-      case "closest":
-        list.sort(
-          (a, b) =>
-            clampPercent(b.currentAmount, b.targetAmount) -
-            clampPercent(a.currentAmount, a.targetAmount),
-        );
-        break;
-      case "az":
-        list.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "newest":
-      default:
-        list.sort((a, b) => b.createdAt - a.createdAt);
+  const todayTodos = useMemo(
+    () => todos.filter((t) => t.date === todayKey),
+    [todos, todayKey],
+  );
+
+  const habitsDoneCount = todayHabits.filter((h) =>
+    completedHabitIdsToday.has(h.id),
+  ).length;
+  const todosDoneCount = todayTodos.filter((t) => t.completedAt).length;
+  const totalCount = todayHabits.length + todayTodos.length;
+  const doneCount = habitsDoneCount + todosDoneCount;
+  const allDone = totalCount > 0 && doneCount === totalCount;
+
+  // Celebration cuma trigger pas TRANSISI ke "semua selesai" (edge-triggered),
+  // bukan tiap kali render lagi dalam kondisi udah semua selesai — dan gak
+  // nyala pas mount pertama kali walau kebetulan semua udah selesai dari
+  // sesi sebelumnya. Lihat CelebrationOverlay.tsx buat alasan desainnya.
+  const [showCelebration, setShowCelebration] = useState(false);
+  const prevAllDoneRef = useRef(allDone);
+  useEffect(() => {
+    if (allDone && !prevAllDoneRef.current) {
+      setShowCelebration(true);
     }
+    prevAllDoneRef.current = allDone;
+  }, [allDone]);
 
-    return list;
-  }, [goals, sortOption, showCompletedOnly]);
+  const handleToggleHabit = (habitId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    void toggleHabitToday(habitId);
+  };
+
+  const handleToggleTodo = (todoId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    void toggleTodo(todoId);
+  };
+
+  const handleSubmitTodo = () => {
+    const title = newTodoTitle.trim();
+    if (!title) return;
+    void addTodo({ title, date: todayKey });
+    setNewTodoTitle("");
+  };
 
   const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        container: {
-          flex: 1,
-          backgroundColor: colors.background,
-          paddingHorizontal: spacing.lg,
-        },
-        header: {
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: spacing.md,
-        },
-        headerTitle: {
-          ...typography.display,
-          fontSize: 28,
-          marginTop: 2,
-        },
-        headerButtons: {
-          flexDirection: "row",
-          gap: spacing.sm,
-        },
-        iconButton: {
-          width: 44,
-          height: 44,
-          borderRadius: radius.pill,
-          backgroundColor: colors.surfaceMuted,
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-        },
-        summaryCard: {
-          padding: spacing.lg,
-          marginBottom: spacing.lg,
-        },
-        summaryAmount: {
-          ...typography.display,
-        },
-        summaryTarget: {
-          ...typography.caption,
-          marginTop: spacing.xs,
-        },
-        androidChipRow: {
-          flexDirection: "row",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: spacing.sm,
-          marginBottom: spacing.md,
-        },
-        androidChipDivider: {
-          width: 1,
-          height: 20,
-          backgroundColor: colors.glassBorder,
-          marginHorizontal: spacing.xs,
-        },
-        listContent: {
-          paddingBottom:
-            insets.bottom +
-            FLOATING_TAB_BAR_MARGIN +
-            FLOATING_TAB_BAR_HEIGHT +
-            spacing.lg,
-        },
-      }),
-    [colors, typography, insets.bottom],
+    () => createStyles(colors, typography, insets.top),
+    [colors, typography, insets.top],
   );
 
+  const hasNothing = todayHabits.length === 0 && todayTodos.length === 0;
+
   return (
-    <View
-      key={isDark ? "dark" : "light"}
-      style={[styles.container, { paddingTop: insets.top + spacing.md }]}
-    >
-      <View style={styles.header}>
-        <View>
-          <Text style={typography.caption}>Total tabungan</Text>
-          <Text style={styles.headerTitle}>Tabungan-ku</Text>
-        </View>
-        <View style={styles.headerButtons}>
-          <Pressable
-            onPress={() => setReminderSheetOpen(true)}
-            style={styles.iconButton}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Pengaturan pengingat menabung"
-            android_ripple={{ color: colors.glassBorder, borderless: false }}
-          >
-            <Text style={{ fontSize: 18 }}>🔔</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <GlassCard
-        tintColor={colors.glassTintLavender}
-        elevationLevel="level2"
-        style={styles.summaryCard}
-      >
-        <Text style={styles.summaryAmount}>{formatIDR(totalSaved)}</Text>
-        <Text style={styles.summaryTarget}>
-          dari total target {formatIDR(totalTarget)} • {goals.length} goal
-        </Text>
-      </GlassCard>
-
-      {goals.length > 0 && (
-        <View style={styles.androidChipRow}>
-          {SORT_OPTIONS.map((option) => (
-            <Chip
-              key={option.key}
-              label={option.label}
-              selected={sortOption === option.key}
-              onPress={() => setSortOption(option.key)}
-              accessibilityLabel={`Urutkan berdasarkan ${option.label}`}
-            />
-          ))}
-          <View style={styles.androidChipDivider} />
-          <Chip
-            label="Selesai"
-            selected={showCompletedOnly}
-            onPress={() => setShowCompletedOnly((prev) => !prev)}
-            accessibilityLabel="Filter goal yang sudah selesai"
-          />
-        </View>
-      )}
-
-      <FlatList<Goal>
-        data={displayedGoals}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+    <View key={isDark ? "dark" : "light"} style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <GoalCard
-            goal={item}
-            onPress={() => router.push(`/goal/${item.id}`)}
-          />
-        )}
-        ListEmptyComponent={
-          <EmptyState
-            emoji={showCompletedOnly ? "🎉" : "🫙"}
-            title={
-              showCompletedOnly
-                ? "Belum ada goal yang selesai"
-                : "Belum ada goal tabungan"
-            }
-            description={
-              showCompletedOnly
-                ? "Terus nabung sampai salah satu goal-mu mencapai 100%."
-                : "Tap tombol + di kanan bawah buat mulai nabung untuk wishlist pertamamu."
-            }
-          />
-        }
-      />
+      >
+        <Text style={typography.caption}>{formatIndonesianDate()}</Text>
+        <Text style={styles.headerTitle}>Today</Text>
 
-      <ReminderSheet
-        visible={reminderSheetOpen}
-        onClose={() => setReminderSheetOpen(false)}
+        {totalCount > 0 && (
+          <GlassCard
+            tintColor={colors.glassTintLavender}
+            elevationLevel="level2"
+            style={styles.progressCard}
+          >
+            <Text style={styles.progressText}>
+              {doneCount} dari {totalCount} selesai
+            </Text>
+            <View style={{ marginTop: spacing.sm }}>
+              <ProgressBar
+                percent={totalCount > 0 ? doneCount / totalCount : 0}
+                accentColor={material3.primary}
+              />
+            </View>
+          </GlassCard>
+        )}
+
+        {hasNothing ? (
+          <EmptyState
+            emoji="🌱"
+            title="Belum ada apa-apa hari ini"
+            description="Tap tombol + di kanan bawah buat mulai bikin habit pertamamu."
+          />
+        ) : (
+          <>
+            {todayHabits.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Habits</Text>
+                {todayHabits.map((habit) => (
+                  <HabitRow
+                    key={habit.id}
+                    habit={habit}
+                    done={completedHabitIdsToday.has(habit.id)}
+                    streak={streakByHabitId.get(habit.id) ?? 0}
+                    onPress={() => router.push(`/habit/${habit.id}`)}
+                    onToggle={() => handleToggleHabit(habit.id)}
+                  />
+                ))}
+              </>
+            )}
+
+            <Text style={styles.sectionTitle}>Tugas hari ini</Text>
+            {todayTodos.map((todo) => (
+              <View key={todo.id} style={styles.row}>
+                <Pressable
+                  onPress={() => handleToggleTodo(todo.id)}
+                  hitSlop={10}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: !!todo.completedAt }}
+                  accessibilityLabel={`Tandai tugas ${todo.title} ${
+                    todo.completedAt ? "belum selesai" : "sudah selesai"
+                  }`}
+                  style={[
+                    styles.checkbox,
+                    !!todo.completedAt && {
+                      backgroundColor: material3.primary,
+                      borderColor: material3.primary,
+                    },
+                  ]}
+                >
+                  {todo.completedAt && (
+                    <Text style={{ color: material3.onPrimary, fontSize: 14 }}>
+                      ✓
+                    </Text>
+                  )}
+                </Pressable>
+                <Text
+                  style={[
+                    typography.body,
+                    styles.rowFlexText,
+                    !!todo.completedAt && styles.doneText,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {todo.title}
+                </Text>
+                <Pressable
+                  onPress={() => void deleteTodo(todo.id)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Hapus tugas ${todo.title}`}
+                >
+                  <Text style={{ fontSize: 16, color: colors.textSecondary }}>
+                    ✕
+                  </Text>
+                </Pressable>
+              </View>
+            ))}
+
+            <View style={styles.addTodoRow}>
+              <Text style={{ fontSize: 16, color: colors.textSecondary }}>
+                +
+              </Text>
+              <TextInput
+                value={newTodoTitle}
+                onChangeText={setNewTodoTitle}
+                placeholder="Tambah tugas..."
+                placeholderTextColor={colors.textSecondary}
+                style={[
+                  typography.body,
+                  styles.addTodoInput,
+                  { color: colors.textPrimary },
+                ]}
+                returnKeyType="done"
+                onSubmitEditing={handleSubmitTodo}
+                blurOnSubmit={false}
+              />
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      <CelebrationOverlay
+        visible={showCelebration}
+        onDismiss={() => setShowCelebration(false)}
       />
     </View>
   );
+}
+
+interface HabitRowProps {
+  habit: Habit;
+  done: boolean;
+  streak: number;
+  onPress: () => void;
+  onToggle: () => void;
+}
+
+function HabitRow({ habit, done, streak, onPress, onToggle }: HabitRowProps) {
+  const { colors, typography, material3 } = useTheme();
+  const styles = useMemo(() => createStyles(colors, typography, 0), [colors, typography]);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={styles.row}
+      android_ripple={{ color: colors.glassBorder }}
+    >
+      <View style={[styles.iconCircle, { backgroundColor: `${habit.color}33` }]}>
+        <MaterialCommunityIcons
+          name={habit.icon as IconName}
+          size={20}
+          color={habit.color}
+        />
+      </View>
+      <View style={styles.rowFlexText}>
+        <Text
+          style={[typography.body, done && styles.doneText]}
+          numberOfLines={1}
+        >
+          {habit.name}
+        </Text>
+        <Text style={typography.caption}>
+          {streak > 0 ? `${streak} hari beruntun` : "Belum ada streak"}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onToggle}
+        hitSlop={10}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: done }}
+        accessibilityLabel={`Tandai ${habit.name} ${done ? "belum selesai" : "sudah selesai"}`}
+        style={[
+          styles.checkbox,
+          done && {
+            backgroundColor: material3.primary,
+            borderColor: material3.primary,
+          },
+        ]}
+      >
+        {done && (
+          <Text style={{ color: material3.onPrimary, fontSize: 14 }}>✓</Text>
+        )}
+      </Pressable>
+    </Pressable>
+  );
+}
+
+function createStyles(
+  colors: ReturnType<typeof useTheme>["colors"],
+  typography: ReturnType<typeof useTheme>["typography"],
+  paddingTop: number,
+) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: spacing.lg,
+    },
+    scrollContent: {
+      paddingTop: paddingTop + spacing.md,
+      paddingBottom:
+        FLOATING_TAB_BAR_MARGIN + FLOATING_TAB_BAR_HEIGHT + spacing.xl,
+    },
+    headerTitle: {
+      ...typography.display,
+      fontSize: 28,
+      marginTop: 2,
+      marginBottom: spacing.md,
+    },
+    progressCard: {
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    progressText: {
+      ...typography.subtitle,
+    },
+    sectionTitle: {
+      ...typography.caption,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: m3Shape.small,
+    },
+    rowFlexText: {
+      flex: 1,
+    },
+    doneText: {
+      textDecorationLine: "line-through",
+      color: colors.textSecondary,
+    },
+    iconCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: m3Shape.full,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    checkbox: {
+      width: 28,
+      height: 28,
+      borderRadius: m3Shape.extraSmall,
+      borderWidth: 2,
+      borderColor: colors.glassBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    addTodoRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    addTodoInput: {
+      flex: 1,
+      paddingVertical: spacing.xs,
+    },
+  });
 }
