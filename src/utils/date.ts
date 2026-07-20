@@ -77,6 +77,99 @@ export function isHabitDueOnDate(
   return isWeekdaySelected(habit.weekdaysMask, getWeekdayIndex(parseDateKey(dateKey)));
 }
 
+/**
+ * Persentase hari DUE yang completed dalam `windowDays` hari kalender
+ * terakhir (termasuk hari ini). Beda dari streak — ini gak peduli
+ * berturut-turut atau enggak, murni rasio.
+ */
+export function calculateCompletionRate(
+  habit: Pick<Habit, "frequencyType" | "weekdaysMask">,
+  completedDateKeys: ReadonlySet<string>,
+  windowDays: number = 30,
+  referenceDate: Date = new Date(),
+): number {
+  const cursor = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  let due = 0;
+  let done = 0;
+  for (let i = 0; i < windowDays; i++) {
+    const key = getLocalDateKey(cursor);
+    if (isHabitDueOnDate(habit, key)) {
+      due++;
+      if (completedDateKeys.has(key)) done++;
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return due > 0 ? Math.round((done / due) * 100) : 0;
+}
+
+export const WEEKDAY_LABELS_SHORT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+
+const INDONESIAN_MONTHS_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+  "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+];
+
+export interface HeatmapDay {
+  dateKey: string;
+  /** 0=Senin ... 6=Minggu */
+  weekdayIndex: number;
+  isFuture: boolean;
+}
+
+/**
+ * Grid mingguan buat heatmap: kolom = minggu (Senin-Minggu per kolom),
+ * kolom PALING KANAN = minggu ini. Tanggal setelah `referenceDate` ditandai
+ * `isFuture` (dirender kosong/transparan, bukan "belum selesai").
+ */
+export function buildHeatmapWeeks(
+  numberOfWeeks: number,
+  referenceDate: Date = new Date(),
+): { weeks: HeatmapDay[][]; monthLabelByWeekIndex: (string | null)[] } {
+  const today = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  const todayWeekdayIndex = getWeekdayIndex(today);
+  const currentWeekMonday = new Date(today);
+  currentWeekMonday.setDate(today.getDate() - todayWeekdayIndex);
+
+  const firstMonday = new Date(currentWeekMonday);
+  firstMonday.setDate(currentWeekMonday.getDate() - (numberOfWeeks - 1) * 7);
+
+  const weeks: HeatmapDay[][] = [];
+  const monthLabelByWeekIndex: (string | null)[] = [];
+  let lastMonth = -1;
+
+  for (let w = 0; w < numberOfWeeks; w++) {
+    const week: HeatmapDay[] = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(firstMonday);
+      date.setDate(firstMonday.getDate() + w * 7 + d);
+      week.push({
+        dateKey: getLocalDateKey(date),
+        weekdayIndex: d,
+        isFuture: date.getTime() > today.getTime(),
+      });
+    }
+    weeks.push(week);
+
+    const mondayMonth = parseDateKey(week[0].dateKey).getMonth();
+    if (mondayMonth !== lastMonth) {
+      monthLabelByWeekIndex.push(INDONESIAN_MONTHS_SHORT[mondayMonth]);
+      lastMonth = mondayMonth;
+    } else {
+      monthLabelByWeekIndex.push(null);
+    }
+  }
+
+  return { weeks, monthLabelByWeekIndex };
+}
+
 // Batas aman buat cegah infinite loop kalau habit gak due di hari manapun
 // (weekdaysMask = 0) — bukan angka yang punya arti fungsional.
 const MAX_STREAK_LOOKBACK_DAYS = 3650;
