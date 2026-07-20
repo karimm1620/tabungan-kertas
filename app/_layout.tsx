@@ -99,6 +99,15 @@ function RootLayoutContent() {
             }}
           />
           <Stack.Screen
+            name="habit/[id]"
+            options={{
+              headerShown: true,
+              title: "",
+              headerTransparent: true,
+              headerTintColor: colors.textPrimary,
+            }}
+          />
+          <Stack.Screen
             name="goal/add"
             options={{
               presentation: "modal",
