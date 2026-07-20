@@ -24,15 +24,13 @@ export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected }}
-      android_ripple={{ color: material3?.onSecondaryContainer }}
+      android_ripple={{ color: material3.onSecondaryContainer }}
       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       style={[
         styles.chip,
         {
-          backgroundColor: selected
-            ? (material3?.secondaryContainer ?? colors.glassTintLavender)
-            : "transparent",
-          borderColor: selected ? "transparent" : (material3?.outline ?? colors.glassBorder),
+          backgroundColor: selected ? material3.secondaryContainer : "transparent",
+          borderColor: selected ? "transparent" : material3.outline,
         },
       ]}
     >
@@ -41,9 +39,7 @@ export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps
           labelStyle,
           {
             textTransform: "none",
-            color: selected
-              ? (material3?.onSecondaryContainer ?? colors.textPrimary)
-              : colors.textSecondary,
+            color: selected ? material3.onSecondaryContainer : colors.textSecondary,
           },
         ]}
         numberOfLines={1}

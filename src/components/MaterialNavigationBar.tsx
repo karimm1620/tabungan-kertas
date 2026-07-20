@@ -77,7 +77,7 @@ export function MaterialNavigationBar({ state, navigation }: BottomTabBarProps) 
             accessibilityLabel={meta.label}
             accessibilityState={{ selected: isFocused }}
             android_ripple={{
-              color: material3?.onSurfaceVariant,
+              color: material3.onSurfaceVariant,
               borderless: true,
               radius: 32,
             }}
@@ -87,8 +87,7 @@ export function MaterialNavigationBar({ state, navigation }: BottomTabBarProps) 
                 style={[
                   styles.pill,
                   {
-                    backgroundColor:
-                      material3?.secondaryContainer ?? colors.glassTintLavender,
+                    backgroundColor: material3.secondaryContainer,
                     opacity: anims[index],
                     transform: [{ scale: pillScale }],
                   },

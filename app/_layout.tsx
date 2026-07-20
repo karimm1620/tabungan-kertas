@@ -111,6 +111,17 @@ function RootLayoutContent() {
               animation: reducedMotion ? "none" : "slide_from_bottom",
             }}
           />
+          <Stack.Screen
+            name="habit/add"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Habit Baru",
+              headerStyle: { backgroundColor: colors.surface },
+              headerTintColor: colors.textPrimary,
+              animation: reducedMotion ? "none" : "slide_from_bottom",
+            }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
