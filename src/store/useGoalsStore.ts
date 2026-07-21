@@ -15,7 +15,7 @@ interface PendingDeletion {
 
 const PENDING_DELETION_SETTINGS_KEY = "pending_goal_deletion";
 
-interface GoalRow {
+export interface GoalRow {
   id: string;
   name: string;
   target_amount: number;
@@ -26,7 +26,7 @@ interface GoalRow {
   created_at: number;
 }
 
-interface TxRow {
+export interface TxRow {
   id: string;
   goal_id: string;
   type: Transaction["type"];
@@ -35,7 +35,7 @@ interface TxRow {
   created_at: number;
 }
 
-function rowToGoal(row: GoalRow): Goal {
+export function rowToGoal(row: GoalRow): Goal {
   return {
     id: row.id,
     name: row.name,
@@ -48,7 +48,7 @@ function rowToGoal(row: GoalRow): Goal {
   };
 }
 
-function rowToTx(row: TxRow): Transaction {
+export function rowToTx(row: TxRow): Transaction {
   return {
     id: row.id,
     goalId: row.goal_id,

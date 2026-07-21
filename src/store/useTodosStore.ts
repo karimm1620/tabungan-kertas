@@ -4,7 +4,7 @@ import type { CreateTodoInput, Todo } from "../types";
 import { getLocalDateKey } from "../utils/date";
 import { generateId } from "../utils/id";
 
-interface TodoRow {
+export interface TodoRow {
   id: string;
   title: string;
   date: string;
@@ -12,7 +12,7 @@ interface TodoRow {
   created_at: number;
 }
 
-function rowToTodo(row: TodoRow): Todo {
+export function rowToTodo(row: TodoRow): Todo {
   return {
     id: row.id,
     title: row.title,

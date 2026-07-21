@@ -4,7 +4,7 @@ import type { CreateHabitInput, Habit, HabitLog } from "../types";
 import { calculateCurrentStreak, getLocalDateKey, isHabitDueOnDate } from "../utils/date";
 import { generateId } from "../utils/id";
 
-interface HabitRow {
+export interface HabitRow {
   id: string;
   name: string;
   icon: string;
@@ -18,14 +18,14 @@ interface HabitRow {
   archived_at: number | null;
 }
 
-interface HabitLogRow {
+export interface HabitLogRow {
   id: string;
   habit_id: string;
   date: string;
   completed_at: number;
 }
 
-function rowToHabit(row: HabitRow): Habit {
+export function rowToHabit(row: HabitRow): Habit {
   return {
     id: row.id,
     name: row.name,
@@ -41,7 +41,7 @@ function rowToHabit(row: HabitRow): Habit {
   };
 }
 
-function rowToLog(row: HabitLogRow): HabitLog {
+export function rowToLog(row: HabitLogRow): HabitLog {
   return {
     id: row.id,
     habitId: row.habit_id,
