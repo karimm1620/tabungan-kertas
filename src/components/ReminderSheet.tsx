@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useAppAlert } from "../hooks/useAppAlert";
 import { useSheetMotion } from "../hooks/useSheetMotion";
-import { useSettingsStore } from "../store/useSettingsStore";
+import { type ReminderDomain, useSettingsStore } from "../store/useSettingsStore";
 import { radius, spacing, withOpacity } from "../theme/colors";
 import { m3ElevationStyle, m3Shape } from "../theme/material3/tokens";
 import { useTheme } from "../theme/useTheme";
@@ -20,7 +20,7 @@ import {
   checkNotificationPermission,
   isNotificationsAvailable,
   requestNotificationPermission,
-  scheduleDailyReminder,
+  scheduleReminder,
 } from "../utils/notifications";
 import { AppAlert } from "./AppAlert";
 
@@ -33,21 +33,35 @@ const TIME_PRESETS = [
   { hour: 21, minute: 0, label: "21.00" },
 ];
 
+const DOMAIN_COPY: Record<ReminderDomain, { title: string; description: string; toggleLabel: string }> = {
+  savings: {
+    title: "Pengingat Menabung",
+    description: "Dapat notifikasi harian biar gak lupa nabung.",
+    toggleLabel: "Aktifkan pengingat harian",
+  },
+  planner: {
+    title: "Pengingat Tugas",
+    description: "Dapat notifikasi harian buat cek tugas hari ini yang belum selesai.",
+    toggleLabel: "Aktifkan pengingat harian",
+  },
+};
+
 interface ReminderSheetProps {
   visible: boolean;
   onClose: () => void;
+  domain: ReminderDomain;
 }
 
-export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
+export function ReminderSheet({ visible, onClose, domain }: ReminderSheetProps) {
   const { colors, typography } = useTheme();
   const { alertState, showAlert, hideAlert } = useAppAlert();
-  const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
-  const reminderHour = useSettingsStore((s) => s.reminderHour);
-  const reminderMinute = useSettingsStore((s) => s.reminderMinute);
-  const reminderNotificationId = useSettingsStore(
-    (s) => s.reminderNotificationId,
+  const reminder = useSettingsStore((s) =>
+    domain === "savings" ? s.savingsReminder : s.plannerReminder,
   );
   const setReminder = useSettingsStore((s) => s.setReminder);
+  const copy = DOMAIN_COPY[domain];
+
+  const { enabled: reminderEnabled, hour: reminderHour, minute: reminderMinute, notificationId: reminderNotificationId } = reminder;
 
   const [busy, setBusy] = useState(false);
   const { mounted, backdropOpacity, sheetTranslateY, dragHandlers } = useSheetMotion({
@@ -61,7 +75,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
       const granted = await checkNotificationPermission();
       if (!granted) {
         await cancelReminder(reminderNotificationId);
-        await setReminder(false, reminderHour, reminderMinute, null);
+        await setReminder(domain, false, reminderHour, reminderMinute, null);
         showAlert(
           "Reminder dinonaktifkan",
           "Izin notifikasi buat aplikasi ini kelihatannya udah gak aktif lagi. Aktifkan lagi kalau mau pakai reminder.",
@@ -74,6 +88,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     reminderHour,
     reminderMinute,
     reminderNotificationId,
+    domain,
     setReminder,
     showAlert,
   ]);
@@ -90,7 +105,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     if (!value) {
       setBusy(true);
       await cancelReminder(reminderNotificationId);
-      await setReminder(false, reminderHour, reminderMinute, null);
+      await setReminder(domain, false, reminderHour, reminderMinute, null);
       setBusy(false);
       return;
     }
@@ -111,7 +126,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     }
 
     await cancelReminder(reminderNotificationId);
-    const id = await scheduleDailyReminder(reminderHour, reminderMinute);
+    const id = await scheduleReminder(domain, reminderHour, reminderMinute);
     if (!id) {
       setBusy(false);
       showAlert(
@@ -120,7 +135,7 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
       );
       return;
     }
-    await setReminder(true, reminderHour, reminderMinute, id);
+    await setReminder(domain, true, reminderHour, reminderMinute, id);
     setBusy(false);
   };
 
@@ -128,9 +143,9 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
     if (!reminderEnabled || busy || !isNotificationsAvailable) return;
     setBusy(true);
     await cancelReminder(reminderNotificationId);
-    const id = await scheduleDailyReminder(hour, minute);
+    const id = await scheduleReminder(domain, hour, minute);
     if (id) {
-      await setReminder(true, hour, minute, id);
+      await setReminder(domain, true, hour, minute, id);
     }
     setBusy(false);
   };
@@ -233,10 +248,8 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
               hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
               {...dragHandlers}
             />
-            <Text style={styles.title}>Pengingat Menabung</Text>
-            <Text style={styles.description}>
-              Dapat notifikasi harian biar gak lupa nabung.
-            </Text>
+            <Text style={styles.title}>{copy.title}</Text>
+            <Text style={styles.description}>{copy.description}</Text>
 
             {!isNotificationsAvailable && (
               <Text style={styles.unavailableNotice}>
@@ -246,14 +259,14 @@ export function ReminderSheet({ visible, onClose }: ReminderSheetProps) {
             )}
 
             <View style={styles.toggleRow}>
-              <Text style={styles.toggleLabel}>Aktifkan pengingat harian</Text>
+              <Text style={styles.toggleLabel}>{copy.toggleLabel}</Text>
               <Switch
                 value={reminderEnabled}
                 onValueChange={handleToggle}
                 disabled={busy || !isNotificationsAvailable}
                 trackColor={{ false: colors.glassBorder, true: colors.deposit }}
                 thumbColor="#FFFFFF"
-                accessibilityLabel="Aktifkan pengingat menabung harian"
+                accessibilityLabel={copy.toggleLabel}
                 accessibilityRole="switch"
               />
             </View>

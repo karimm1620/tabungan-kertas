@@ -45,7 +45,14 @@
           "photosPermission": "Aplikasi butuh akses galeri supaya kamu bisa memilih gambar untuk goal tabunganmu."
         }
       ],
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#A985E0",
+          "defaultChannel": "savings"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

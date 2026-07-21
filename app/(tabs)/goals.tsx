@@ -236,6 +236,7 @@ export default function GoalsScreen() {
       <ReminderSheet
         visible={reminderSheetOpen}
         onClose={() => setReminderSheetOpen(false)}
+        domain="savings"
       />
     </View>
   );
