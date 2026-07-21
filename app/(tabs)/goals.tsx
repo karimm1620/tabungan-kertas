@@ -151,6 +151,16 @@ export default function GoalsScreen() {
         </View>
         <View style={styles.headerButtons}>
           <Pressable
+            onPress={() => router.push("/settings")}
+            style={styles.iconButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Buka pengaturan"
+            android_ripple={{ color: colors.glassBorder, borderless: false }}
+          >
+            <Text style={{ fontSize: 18 }}>⚙️</Text>
+          </Pressable>
+          <Pressable
             onPress={() => setReminderSheetOpen(true)}
             style={styles.iconButton}
             hitSlop={8}
