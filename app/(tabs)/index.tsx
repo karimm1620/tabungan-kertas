@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppAlert } from "../../src/components/AppAlert";
 import { CelebrationOverlay } from "../../src/components/CelebrationOverlay";
 import { EmptyState } from "../../src/components/EmptyState";
 import {
@@ -19,6 +20,9 @@ import {
 } from "../../src/components/FloatingTabBar";
 import { GlassCard } from "../../src/components/GlassCard";
 import { ProgressBar } from "../../src/components/ProgressBar";
+import { SwipeableRow } from "../../src/components/SwipeableRow";
+import { useAppAlert } from "../../src/hooks/useAppAlert";
+import { useHabitActions } from "../../src/hooks/useHabitActions";
 import { useHabitsStore } from "../../src/store/useHabitsStore";
 import { useTodosStore } from "../../src/store/useTodosStore";
 import { spacing } from "../../src/theme/colors";
@@ -182,50 +186,13 @@ export default function TodayScreen() {
 
             <Text style={styles.sectionTitle}>Tugas hari ini</Text>
             {todayTodos.map((todo) => (
-              <View key={todo.id} style={styles.row}>
-                <Pressable
-                  onPress={() => handleToggleTodo(todo.id)}
-                  hitSlop={10}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: !!todo.completedAt }}
-                  accessibilityLabel={`Tandai tugas ${todo.title} ${
-                    todo.completedAt ? "belum selesai" : "sudah selesai"
-                  }`}
-                  style={[
-                    styles.checkbox,
-                    !!todo.completedAt && {
-                      backgroundColor: material3.primary,
-                      borderColor: material3.primary,
-                    },
-                  ]}
-                >
-                  {todo.completedAt && (
-                    <Text style={{ color: material3.onPrimary, fontSize: 14 }}>
-                      ✓
-                    </Text>
-                  )}
-                </Pressable>
-                <Text
-                  style={[
-                    typography.body,
-                    styles.rowFlexText,
-                    !!todo.completedAt && styles.doneText,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {todo.title}
-                </Text>
-                <Pressable
-                  onPress={() => void deleteTodo(todo.id)}
-                  hitSlop={10}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Hapus tugas ${todo.title}`}
-                >
-                  <Text style={{ fontSize: 16, color: colors.textSecondary }}>
-                    ✕
-                  </Text>
-                </Pressable>
-              </View>
+              <TodoRow
+                key={todo.id}
+                title={todo.title}
+                done={!!todo.completedAt}
+                onToggle={() => handleToggleTodo(todo.id)}
+                onDelete={() => void deleteTodo(todo.id)}
+              />
             ))}
 
             <View style={styles.addTodoRow}>
@@ -268,52 +235,153 @@ interface HabitRowProps {
 }
 
 function HabitRow({ habit, done, streak, onPress, onToggle }: HabitRowProps) {
+  const router = useRouter();
+  const { colors, typography, material3 } = useTheme();
+  const { alertState, showAlert, hideAlert } = useAppAlert();
+  const { archiveWithCleanup, deletePermanentlyWithCleanup } = useHabitActions();
+  const styles = useMemo(() => createStyles(colors, typography, 0), [colors, typography]);
+
+  const handleDelete = () => {
+    showAlert(
+      "Hapus permanen?",
+      `Semua histori "${habit.name}" akan hilang selamanya — ini gak bisa di-undo. Kalau cuma mau berhenti tanpa kehilangan histori, swipe lagi terus pilih Arsip aja.`,
+      [
+        { label: "Batal", style: "cancel" },
+        {
+          label: "Hapus",
+          style: "destructive",
+          onPress: () => void deletePermanentlyWithCleanup(habit),
+        },
+      ],
+    );
+  };
+
+  return (
+    <>
+      <SwipeableRow
+        quickAction={{
+          label: "Arsip",
+          icon: "archive-outline",
+          color: habit.color,
+          onPress: () => void archiveWithCleanup(habit),
+        }}
+        menuActions={[
+          {
+            label: "Edit",
+            icon: "pencil-outline",
+            color: colors.textSecondary,
+            onPress: () => router.push(`/habit/add?id=${habit.id}`),
+          },
+          {
+            label: "Arsip",
+            icon: "archive-outline",
+            color: habit.color,
+            onPress: () => void archiveWithCleanup(habit),
+          },
+          {
+            label: "Hapus",
+            icon: "delete-outline",
+            color: colors.danger,
+            onPress: handleDelete,
+          },
+        ]}
+      >
+        <Pressable
+          onPress={onPress}
+          style={[styles.row, { backgroundColor: colors.background }]}
+          android_ripple={{ color: colors.glassBorder }}
+        >
+          <View style={[styles.iconCircle, { backgroundColor: `${habit.color}33` }]}>
+            <MaterialCommunityIcons
+              name={habit.icon as IconName}
+              size={20}
+              color={habit.color}
+            />
+          </View>
+          <View style={styles.rowFlexText}>
+            <Text
+              style={[typography.body, done && styles.doneText]}
+              numberOfLines={1}
+            >
+              {habit.name}
+            </Text>
+            <Text style={typography.caption}>
+              {streak > 0 ? `${streak} hari beruntun` : "Belum ada streak"}
+              {habit.reminderTime ? ` · ${habit.reminderTime}` : ""}
+            </Text>
+          </View>
+          <Pressable
+            onPress={onToggle}
+            hitSlop={10}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: done }}
+            accessibilityLabel={`Tandai ${habit.name} ${done ? "belum selesai" : "sudah selesai"}`}
+            style={[
+              styles.checkbox,
+              done && {
+                backgroundColor: material3.primary,
+                borderColor: material3.primary,
+              },
+            ]}
+          >
+            {done && (
+              <Text style={{ color: material3.onPrimary, fontSize: 14 }}>✓</Text>
+            )}
+          </Pressable>
+        </Pressable>
+      </SwipeableRow>
+
+      <AppAlert
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        buttons={alertState.buttons}
+        onClose={hideAlert}
+      />
+    </>
+  );
+}
+
+interface TodoRowProps {
+  title: string;
+  done: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+}
+
+function TodoRow({ title, done, onToggle, onDelete }: TodoRowProps) {
   const { colors, typography, material3 } = useTheme();
   const styles = useMemo(() => createStyles(colors, typography, 0), [colors, typography]);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={styles.row}
-      android_ripple={{ color: colors.glassBorder }}
+    <SwipeableRow
+      quickAction={{ label: "Hapus", icon: "delete-outline", color: colors.danger, onPress: onDelete }}
+      menuActions={[
+        { label: "Hapus", icon: "delete-outline", color: colors.danger, onPress: onDelete },
+      ]}
     >
-      <View style={[styles.iconCircle, { backgroundColor: `${habit.color}33` }]}>
-        <MaterialCommunityIcons
-          name={habit.icon as IconName}
-          size={20}
-          color={habit.color}
-        />
-      </View>
-      <View style={styles.rowFlexText}>
+      <View style={[styles.row, { backgroundColor: colors.background }]}>
+        <Pressable
+          onPress={onToggle}
+          hitSlop={10}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: done }}
+          accessibilityLabel={`Tandai tugas ${title} ${done ? "belum selesai" : "sudah selesai"}`}
+          style={[
+            styles.checkbox,
+            done && { backgroundColor: material3.primary, borderColor: material3.primary },
+          ]}
+        >
+          {done && <Text style={{ color: material3.onPrimary, fontSize: 14 }}>✓</Text>}
+        </Pressable>
         <Text
-          style={[typography.body, done && styles.doneText]}
+          style={[typography.body, styles.rowFlexText, done && styles.doneText]}
           numberOfLines={1}
         >
-          {habit.name}
-        </Text>
-        <Text style={typography.caption}>
-          {streak > 0 ? `${streak} hari beruntun` : "Belum ada streak"}
+          {title}
         </Text>
       </View>
-      <Pressable
-        onPress={onToggle}
-        hitSlop={10}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: done }}
-        accessibilityLabel={`Tandai ${habit.name} ${done ? "belum selesai" : "sudah selesai"}`}
-        style={[
-          styles.checkbox,
-          done && {
-            backgroundColor: material3.primary,
-            borderColor: material3.primary,
-          },
-        ]}
-      >
-        {done && (
-          <Text style={{ color: material3.onPrimary, fontSize: 14 }}>✓</Text>
-        )}
-      </Pressable>
-    </Pressable>
+    </SwipeableRow>
   );
 }
 
