@@ -7,6 +7,10 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from "../../src/components/AppAlert";
 import { GlassCard } from "../../src/components/GlassCard";
+import {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MARGIN,
+} from "../../src/components/FloatingTabBar";
 import { ReminderCard } from "../../src/components/ReminderCard";
 import { useAppAlert } from "../../src/hooks/useAppAlert";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
@@ -214,7 +218,8 @@ function createStyles(
     content: {
       paddingTop: paddingTop + spacing.md,
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.xxl,
+      paddingBottom:
+        FLOATING_TAB_BAR_MARGIN + FLOATING_TAB_BAR_HEIGHT + spacing.xl,
     },
     headerTitle: {
       ...typography.display,
@@ -235,25 +240,31 @@ function createStyles(
     },
     primaryButton: {
       marginTop: spacing.sm,
+      width: "100%",
       backgroundColor: material3.primary,
       borderRadius: m3Shape.full,
       paddingVertical: spacing.md,
       alignItems: "center",
+      justifyContent: "center",
       overflow: "hidden",
     },
     primaryButtonText: {
       ...typography.subtitle,
+      textAlign: "center",
       color: material3.onPrimary,
     },
     secondaryButton: {
+      width: "100%",
       backgroundColor: material3.secondaryContainer,
       borderRadius: m3Shape.full,
       paddingVertical: spacing.md,
       alignItems: "center",
+      justifyContent: "center",
       overflow: "hidden",
     },
     secondaryButtonText: {
       ...typography.subtitle,
+      textAlign: "center",
       color: material3.onSecondaryContainer,
     },
     buttonDisabled: {

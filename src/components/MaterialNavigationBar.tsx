@@ -105,6 +105,7 @@ export function MaterialNavigationBar({ state, navigation }: BottomTabBarProps) 
               />
             </View>
             <Text
+              numberOfLines={1}
               style={[
                 typeScale.labelMedium,
                 {

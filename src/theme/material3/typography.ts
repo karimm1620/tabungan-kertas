@@ -18,17 +18,17 @@ export function buildM3FullTypeScale(onSurface: string, onSurfaceVariant: string
     headlineMedium: { fontFamily, fontSize: 28, lineHeight: 36, fontWeight: "700" as const, letterSpacing: -0.3, color: onSurface },
     headlineSmall: { fontFamily, fontSize: 24, lineHeight: 32, fontWeight: "700" as const, letterSpacing: 0, color: onSurface },
 
-    titleLarge: { fontFamily: fontFamilyMedium, fontSize: 22, lineHeight: 28, fontWeight: "700" as const, letterSpacing: 0, color: onSurface },
-    titleMedium: { fontFamily: fontFamilyMedium, fontSize: 16, lineHeight: 24, fontWeight: "600" as const, letterSpacing: 0.15, color: onSurface },
-    titleSmall: { fontFamily: fontFamilyMedium, fontSize: 14, lineHeight: 20, fontWeight: "600" as const, letterSpacing: 0.1, color: onSurface },
+    titleLarge: { fontFamily: fontFamilyMedium, fontSize: 22, lineHeight: 28, letterSpacing: 0, color: onSurface },
+    titleMedium: { fontFamily: fontFamilyMedium, fontSize: 16, lineHeight: 24, letterSpacing: 0.15, color: onSurface },
+    titleSmall: { fontFamily: fontFamilyMedium, fontSize: 14, lineHeight: 20, letterSpacing: 0.1, color: onSurface },
 
     bodyLarge: { fontFamily, fontSize: 16, lineHeight: 24, fontWeight: "400" as const, letterSpacing: 0.5, color: onSurface },
     bodyMedium: { fontFamily, fontSize: 14, lineHeight: 20, fontWeight: "400" as const, letterSpacing: 0.25, color: onSurface },
     bodySmall: { fontFamily, fontSize: 12, lineHeight: 16, fontWeight: "400" as const, letterSpacing: 0.4, color: onSurfaceVariant },
 
-    labelLarge: { fontFamily: fontFamilyMedium, fontSize: 14, lineHeight: 20, fontWeight: "600" as const, letterSpacing: 0.1, color: onSurface },
-    labelMedium: { fontFamily: fontFamilyMedium, fontSize: 12, lineHeight: 16, fontWeight: "600" as const, letterSpacing: 0.5, color: onSurfaceVariant },
-    labelSmall: { fontFamily: fontFamilyMedium, fontSize: 11, lineHeight: 16, fontWeight: "600" as const, letterSpacing: 0.5, color: onSurfaceVariant },
+    labelLarge: { fontFamily: fontFamilyMedium, fontSize: 14, lineHeight: 20, letterSpacing: 0.1, color: onSurface },
+    labelMedium: { fontFamily: fontFamilyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 0.5, color: onSurfaceVariant },
+    labelSmall: { fontFamily: fontFamilyMedium, fontSize: 11, lineHeight: 16, letterSpacing: 0.5, color: onSurfaceVariant },
   };
 }
 
