@@ -28,6 +28,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="index" options={{ title: "Today" }} />
         <Tabs.Screen name="goals" options={{ title: "Goals" }} />
         <Tabs.Screen name="history" options={{ title: "History" }} />
+        <Tabs.Screen name="settings" options={{ title: "Settings" }} />
       </Tabs>
       <UndoSnackbar bottomOffset={bottomOffset} />
       {fabConfig && (

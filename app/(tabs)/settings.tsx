@@ -1,28 +1,29 @@
+import Constants from "expo-constants";
 import { File } from "expo-file-system";
 import * as DocumentPicker from "expo-document-picker";
 import * as Sharing from "expo-sharing";
-import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { AppAlert } from "../src/components/AppAlert";
-import { GlassCard } from "../src/components/GlassCard";
-import { TopAppBar } from "../src/components/TopAppBar";
-import { useAppAlert } from "../src/hooks/useAppAlert";
-import { useGoalsStore } from "../src/store/useGoalsStore";
-import { useHabitsStore } from "../src/store/useHabitsStore";
-import { useSettingsStore } from "../src/store/useSettingsStore";
-import { useTodosStore } from "../src/store/useTodosStore";
-import { spacing } from "../src/theme/colors";
-import { m3Shape } from "../src/theme/material3/tokens";
-import { useTheme } from "../src/theme/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppAlert } from "../../src/components/AppAlert";
+import { GlassCard } from "../../src/components/GlassCard";
+import { ReminderCard } from "../../src/components/ReminderCard";
+import { useAppAlert } from "../../src/hooks/useAppAlert";
+import { useGoalsStore } from "../../src/store/useGoalsStore";
+import { useHabitsStore } from "../../src/store/useHabitsStore";
+import { useSettingsStore } from "../../src/store/useSettingsStore";
+import { useTodosStore } from "../../src/store/useTodosStore";
+import { spacing } from "../../src/theme/colors";
+import { m3Shape } from "../../src/theme/material3/tokens";
+import { useTheme } from "../../src/theme/useTheme";
 import {
   exportBackupToFile,
   restoreFromBackup,
   validateBackupPayload,
-} from "../src/utils/backup";
+} from "../../src/utils/backup";
 
 export default function SettingsScreen() {
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, typography, isDark, material3 } = useTheme();
   const { alertState, showAlert, hideAlert } = useAppAlert();
   const [busy, setBusy] = useState<"export" | "import" | null>(null);
@@ -33,8 +34,8 @@ export default function SettingsScreen() {
   const hydrateTodos = useTodosStore((s) => s.hydrate);
 
   const styles = useMemo(
-    () => createStyles(colors, typography, material3),
-    [colors, typography, material3],
+    () => createStyles(colors, typography, material3, insets.top),
+    [colors, typography, material3, insets.top],
   );
 
   const handleExport = async () => {
@@ -126,10 +127,17 @@ export default function SettingsScreen() {
     );
   };
 
+  const appVersion = Constants.expoConfig?.version ?? "-";
+
   return (
     <View key={isDark ? "dark" : "light"} style={styles.container}>
-      <TopAppBar title="Pengaturan" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.headerTitle}>Pengaturan</Text>
+
+        <Text style={styles.sectionTitle}>Notifikasi</Text>
+        <ReminderCard domain="savings" />
+        <ReminderCard domain="planner" />
+
         <Text style={styles.sectionTitle}>Backup & Restore</Text>
         <GlassCard style={styles.card} elevationLevel="level1">
           <Text style={typography.body}>
@@ -169,6 +177,16 @@ export default function SettingsScreen() {
             )}
           </Pressable>
         </GlassCard>
+
+        <Text style={styles.sectionTitle}>Tentang</Text>
+        <GlassCard style={styles.card} elevationLevel="level1">
+          <View style={styles.aboutRow}>
+            <Text style={typography.body}>Versi aplikasi</Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>
+              {appVersion}
+            </Text>
+          </View>
+        </GlassCard>
       </ScrollView>
 
       <AppAlert
@@ -186,6 +204,7 @@ function createStyles(
   colors: ReturnType<typeof useTheme>["colors"],
   typography: ReturnType<typeof useTheme>["typography"],
   material3: ReturnType<typeof useTheme>["material3"],
+  paddingTop: number,
 ) {
   return StyleSheet.create({
     container: {
@@ -193,18 +212,26 @@ function createStyles(
       backgroundColor: colors.background,
     },
     content: {
-      padding: spacing.lg,
+      paddingTop: paddingTop + spacing.md,
+      paddingHorizontal: spacing.lg,
       paddingBottom: spacing.xxl,
+    },
+    headerTitle: {
+      ...typography.display,
+      fontSize: 28,
+      marginBottom: spacing.md,
     },
     sectionTitle: {
       ...typography.caption,
       fontWeight: "700",
       textTransform: "uppercase",
+      marginTop: spacing.md,
       marginBottom: spacing.sm,
     },
     card: {
       padding: spacing.lg,
       gap: spacing.md,
+      marginBottom: spacing.md,
     },
     primaryButton: {
       marginTop: spacing.sm,
@@ -231,6 +258,11 @@ function createStyles(
     },
     buttonDisabled: {
       opacity: 0.7,
+    },
+    aboutRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
     },
   });
 }

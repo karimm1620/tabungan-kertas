@@ -19,7 +19,6 @@ import {
 } from "../../src/components/FloatingTabBar";
 import { GlassCard } from "../../src/components/GlassCard";
 import { ProgressBar } from "../../src/components/ProgressBar";
-import { ReminderSheet } from "../../src/components/ReminderSheet";
 import { useHabitsStore } from "../../src/store/useHabitsStore";
 import { useTodosStore } from "../../src/store/useTodosStore";
 import { spacing } from "../../src/theme/colors";
@@ -53,7 +52,6 @@ export default function TodayScreen() {
   const deleteTodo = useTodosStore((s) => s.deleteTodo);
 
   const [newTodoTitle, setNewTodoTitle] = useState("");
-  const [reminderSheetOpen, setReminderSheetOpen] = useState(false);
 
   const todayKey = getLocalDateKey();
 
@@ -137,22 +135,8 @@ export default function TodayScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={typography.caption}>{formatIndonesianDate()}</Text>
-            <Text style={styles.headerTitle}>Today</Text>
-          </View>
-          <Pressable
-            onPress={() => setReminderSheetOpen(true)}
-            style={styles.bellButton}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Pengaturan pengingat tugas harian"
-            android_ripple={{ color: colors.glassBorder, borderless: false }}
-          >
-            <Text style={{ fontSize: 18 }}>🔔</Text>
-          </Pressable>
-        </View>
+        <Text style={typography.caption}>{formatIndonesianDate()}</Text>
+        <Text style={styles.headerTitle}>Today</Text>
 
         {totalCount > 0 && (
           <GlassCard
@@ -271,12 +255,6 @@ export default function TodayScreen() {
         visible={showCelebration}
         onDismiss={() => setShowCelebration(false)}
       />
-
-      <ReminderSheet
-        visible={reminderSheetOpen}
-        onClose={() => setReminderSheetOpen(false)}
-        domain="planner"
-      />
     </View>
   );
 }
@@ -354,19 +332,6 @@ function createStyles(
       paddingTop: paddingTop + spacing.md,
       paddingBottom:
         FLOATING_TAB_BAR_MARGIN + FLOATING_TAB_BAR_HEIGHT + spacing.xl,
-    },
-    headerRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      justifyContent: "space-between",
-    },
-    bellButton: {
-      width: 36,
-      height: 36,
-      borderRadius: m3Shape.full,
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 2,
     },
     headerTitle: {
       ...typography.display,

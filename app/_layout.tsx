@@ -131,13 +131,6 @@ function RootLayoutContent() {
               animation: reducedMotion ? "none" : "slide_from_bottom",
             }}
           />
-          <Stack.Screen
-            name="settings"
-            options={{
-              headerShown: false,
-              animation: reducedMotion ? "none" : "slide_from_right",
-            }}
-          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

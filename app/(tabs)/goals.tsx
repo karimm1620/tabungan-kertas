@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Chip } from "../../src/components/Chip";
@@ -10,7 +10,6 @@ import {
 } from "../../src/components/FloatingTabBar";
 import { GlassCard } from "../../src/components/GlassCard";
 import { GoalCard } from "../../src/components/GoalCard";
-import { ReminderSheet } from "../../src/components/ReminderSheet";
 import { useGoalsStore } from "../../src/store/useGoalsStore";
 import { radius, spacing } from "../../src/theme/colors";
 import { useTheme } from "../../src/theme/useTheme";
@@ -33,7 +32,6 @@ export default function GoalsScreen() {
 
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [showCompletedOnly, setShowCompletedOnly] = useState(false);
-  const [reminderSheetOpen, setReminderSheetOpen] = useState(false);
 
   const totalSaved = useMemo(
     () => goals.reduce((sum, g) => sum + g.currentAmount, 0),
@@ -149,28 +147,6 @@ export default function GoalsScreen() {
           <Text style={typography.caption}>Total tabungan</Text>
           <Text style={styles.headerTitle}>Tabungan-ku</Text>
         </View>
-        <View style={styles.headerButtons}>
-          <Pressable
-            onPress={() => router.push("/settings")}
-            style={styles.iconButton}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Buka pengaturan"
-            android_ripple={{ color: colors.glassBorder, borderless: false }}
-          >
-            <Text style={{ fontSize: 18 }}>⚙️</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setReminderSheetOpen(true)}
-            style={styles.iconButton}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Pengaturan pengingat menabung"
-            android_ripple={{ color: colors.glassBorder, borderless: false }}
-          >
-            <Text style={{ fontSize: 18 }}>🔔</Text>
-          </Pressable>
-        </View>
       </View>
 
       <GlassCard
@@ -231,12 +207,6 @@ export default function GoalsScreen() {
             }
           />
         }
-      />
-
-      <ReminderSheet
-        visible={reminderSheetOpen}
-        onClose={() => setReminderSheetOpen(false)}
-        domain="savings"
       />
     </View>
   );

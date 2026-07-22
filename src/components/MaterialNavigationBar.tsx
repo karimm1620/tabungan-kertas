@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
@@ -50,7 +51,11 @@ export function MaterialNavigationBar({ state, navigation }: BottomTabBarProps) 
     >
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
-        const meta = TAB_META[route.name] ?? { icon: "•", label: route.name };
+        const meta = TAB_META[route.name] ?? {
+          icon: "help-circle-outline" as const,
+          label: route.name,
+        };
+        const iconName = isFocused ? (meta.iconActive ?? meta.icon) : meta.icon;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -93,7 +98,11 @@ export function MaterialNavigationBar({ state, navigation }: BottomTabBarProps) 
                   },
                 ]}
               />
-              <Text style={styles.icon}>{meta.icon}</Text>
+              <MaterialCommunityIcons
+                name={iconName}
+                size={22}
+                color={isFocused ? colors.textPrimary : colors.textSecondary}
+              />
             </View>
             <Text
               style={[
@@ -138,8 +147,5 @@ const styles = StyleSheet.create({
     width: 64,
     height: 32,
     borderRadius: m3Shape.full,
-  },
-  icon: {
-    fontSize: 18,
   },
 });
