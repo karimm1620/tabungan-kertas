@@ -16,6 +16,7 @@ export interface HabitRow {
   best_streak: number;
   created_at: number;
   archived_at: number | null;
+  sort_order: number;
 }
 
 export interface HabitLogRow {
@@ -38,6 +39,7 @@ export function rowToHabit(row: HabitRow): Habit {
     bestStreak: row.best_streak,
     createdAt: row.created_at,
     archivedAt: row.archived_at,
+    sortOrder: row.sort_order,
   };
 }
 
@@ -49,6 +51,7 @@ export function rowToLog(row: HabitLogRow): HabitLog {
     completedAt: row.completed_at,
   };
 }
+  // reorderHabits: any;
 
 interface HabitsState {
   habits: Habit[];
@@ -72,11 +75,13 @@ interface HabitsState {
   toggleHabitToday: (habitId: string) => Promise<void>;
 
   getHabitById: (id: string) => Habit | undefined;
-  /** Habit yang due hari ini DAN belum di-archive, urutan gak berubah (createdAt DESC). */
+  /** Habit yang due hari ini DAN belum di-archive, urutan ngikutin sort_order (hasil drag-reorder). */
   getTodayHabits: () => Habit[];
   isHabitCompletedToday: (habitId: string) => boolean;
   getCompletedDateKeys: (habitId: string) => Set<string>;
   getCurrentStreak: (habitId: string) => number;
+  /** Persist urutan baru hasil drag-reorder — bulk update sort_order = index. */
+  reorderHabits: (newOrder: Habit[]) => Promise<void>;
   // ⚠️ 5 method di atas (`getHabitById` s/d `getCurrentStreak`) itu HELPER
   // IMPERATIF — panggil langsung (`useHabitsStore.getState().getTodayHabits()`
   // atau dari dalam action lain lewat `get()`), JANGAN dipakai sebagai
@@ -103,7 +108,7 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
     const db = await getDb();
     const [habitRows, logRows] = await Promise.all([
       db.getAllAsync<HabitRow>(
-        "SELECT * FROM habits ORDER BY created_at DESC",
+        "SELECT * FROM habits ORDER BY sort_order ASC",
       ),
       db.getAllAsync<HabitLogRow>("SELECT * FROM habit_logs"),
     ]);
@@ -115,6 +120,7 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
   },
 
   addHabit: async (input) => {
+    const existingOrders = get().habits.map((h) => h.sortOrder);
     const newHabit: Habit = {
       id: generateId("habit"),
       name: input.name.trim(),
@@ -127,13 +133,14 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
       bestStreak: 0,
       createdAt: Date.now(),
       archivedAt: null,
+      sortOrder: existingOrders.length > 0 ? Math.min(...existingOrders) - 1 : 0,
     };
 
     const db = await getDb();
     await db.runAsync(
       `INSERT INTO habits
-        (id, name, icon, color, frequency_type, weekdays_mask, reminder_time, notification_id, best_streak, created_at, archived_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, name, icon, color, frequency_type, weekdays_mask, reminder_time, notification_id, best_streak, created_at, archived_at, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         newHabit.id,
         newHabit.name,
@@ -146,6 +153,7 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
         newHabit.bestStreak,
         newHabit.createdAt,
         newHabit.archivedAt,
+        newHabit.sortOrder,
       ],
     );
 
@@ -327,5 +335,20 @@ export const useHabitsStore = create<HabitsState>()((set, get) => ({
     const habit = get().habits.find((h) => h.id === habitId);
     if (!habit) return 0;
     return calculateCurrentStreak(habit, get().getCompletedDateKeys(habitId));
+  },
+
+  reorderHabits: async (newOrder) => {
+    const db = await getDb();
+    await db.withTransactionAsync(async () => {
+      for (let i = 0; i < newOrder.length; i++) {
+        await db.runAsync("UPDATE habits SET sort_order = ? WHERE id = ?", [
+          i,
+          newOrder[i].id,
+        ]);
+      }
+    });
+    set({
+      habits: newOrder.map((h, i) => ({ ...h, sortOrder: i })),
+    });
   },
 }));

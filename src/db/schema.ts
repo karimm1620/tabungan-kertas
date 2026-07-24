@@ -19,13 +19,29 @@
  * cuma ngaruh ke instalasi baru — DB yang udah ke-create sebelumnya gak
  * ikut ke-update strukturnya otomatis).
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   {
     // v2 — notification_id per habit (Checkpoint 1: reminder habit).
     version: 2,
     sql: `ALTER TABLE habits ADD COLUMN notification_id TEXT;`,
+  },
+  {
+    // v3 — sort_order buat drag-reorder manual (Checkpoint 2c). Backfill
+    // dari urutan created_at DESC yang lama (0 = terbaru), biar transisi ke
+    // versi ini gak nge-reshuffle urutan yang keliatan user sekarang.
+    version: 3,
+    sql: `
+      ALTER TABLE savings_goals ADD COLUMN sort_order INTEGER;
+      UPDATE savings_goals SET sort_order = (
+        SELECT COUNT(*) FROM savings_goals AS g2 WHERE g2.created_at > savings_goals.created_at
+      );
+      ALTER TABLE habits ADD COLUMN sort_order INTEGER;
+      UPDATE habits SET sort_order = (
+        SELECT COUNT(*) FROM habits AS h2 WHERE h2.created_at > habits.created_at
+      );
+    `,
   },
 ];
 

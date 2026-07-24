@@ -3,6 +3,8 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  type GestureResponderHandlers,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +24,10 @@ import { GlassCard } from "../../src/components/GlassCard";
 import { ProgressBar } from "../../src/components/ProgressBar";
 import { SwipeableRow } from "../../src/components/SwipeableRow";
 import { useAppAlert } from "../../src/hooks/useAppAlert";
+import {
+  mergeReorderedSubsetIntoFullList,
+  useDragReorder,
+} from "../../src/hooks/useDragReorder";
 import { useHabitActions } from "../../src/hooks/useHabitActions";
 import { useHabitsStore } from "../../src/store/useHabitsStore";
 import { useTodosStore } from "../../src/store/useTodosStore";
@@ -49,6 +55,7 @@ export default function TodayScreen() {
   const habits = useHabitsStore((s) => s.habits);
   const habitLogs = useHabitsStore((s) => s.habitLogs);
   const toggleHabitToday = useHabitsStore((s) => s.toggleHabitToday);
+  const reorderHabits = useHabitsStore((s) => s.reorderHabits);
 
   const todos = useTodosStore((s) => s.todos);
   const toggleTodo = useTodosStore((s) => s.toggleTodo);
@@ -56,6 +63,7 @@ export default function TodayScreen() {
   const deleteTodo = useTodosStore((s) => s.deleteTodo);
 
   const [newTodoTitle, setNewTodoTitle] = useState("");
+  const [habitRowHeight, setHabitRowHeight] = useState(64);
 
   const todayKey = getLocalDateKey();
 
@@ -87,6 +95,25 @@ export default function TodayScreen() {
     () => todos.filter((t) => t.date === todayKey),
     [todos, todayKey],
   );
+
+  const {
+    order: orderedTodayHabits,
+    draggingKey: draggingHabitKey,
+    dragY: habitDragY,
+    getHandlePanResponder: getHabitDragHandle,
+  } = useDragReorder<Habit>({
+    items: todayHabits,
+    keyExtractor: (h) => h.id,
+    itemHeight: habitRowHeight,
+    onReorderCommit: (newSubsetOrder) => {
+      const merged = mergeReorderedSubsetIntoFullList(
+        habits,
+        (h) => h.id,
+        newSubsetOrder,
+      );
+      void reorderHabits(merged);
+    },
+  });
 
   const habitsDoneCount = todayHabits.filter((h) =>
     completedHabitIdsToday.has(h.id),
@@ -138,6 +165,7 @@ export default function TodayScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={draggingHabitKey === null}
       >
         <Text style={typography.caption}>{formatIndonesianDate()}</Text>
         <Text style={styles.headerTitle}>Today</Text>
@@ -171,7 +199,7 @@ export default function TodayScreen() {
             {todayHabits.length > 0 && (
               <>
                 <Text style={styles.sectionTitle}>Habits</Text>
-                {todayHabits.map((habit) => (
+                {orderedTodayHabits.map((habit) => (
                   <HabitRow
                     key={habit.id}
                     habit={habit}
@@ -179,6 +207,10 @@ export default function TodayScreen() {
                     streak={streakByHabitId.get(habit.id) ?? 0}
                     onPress={() => router.push(`/habit/${habit.id}`)}
                     onToggle={() => handleToggleHabit(habit.id)}
+                    onLayout={(h) => setHabitRowHeight(h)}
+                    isDragging={draggingHabitKey === habit.id}
+                    dragY={habitDragY}
+                    dragHandlers={getHabitDragHandle(habit).panHandlers}
                   />
                 ))}
               </>
@@ -232,9 +264,23 @@ interface HabitRowProps {
   streak: number;
   onPress: () => void;
   onToggle: () => void;
+  onLayout: (height: number) => void;
+  isDragging: boolean;
+  dragY: Animated.Value;
+  dragHandlers: GestureResponderHandlers;
 }
 
-function HabitRow({ habit, done, streak, onPress, onToggle }: HabitRowProps) {
+function HabitRow({
+  habit,
+  done,
+  streak,
+  onPress,
+  onToggle,
+  onLayout,
+  isDragging,
+  dragY,
+  dragHandlers,
+}: HabitRowProps) {
   const router = useRouter();
   const { colors, typography, material3 } = useTheme();
   const { alertState, showAlert, hideAlert } = useAppAlert();
@@ -258,78 +304,103 @@ function HabitRow({ habit, done, streak, onPress, onToggle }: HabitRowProps) {
 
   return (
     <>
-      <SwipeableRow
-        quickAction={{
-          label: "Arsip",
-          icon: "archive-outline",
-          color: habit.color,
-          onPress: () => void archiveWithCleanup(habit),
-        }}
-        menuActions={[
-          {
-            label: "Edit",
-            icon: "pencil-outline",
-            color: colors.textSecondary,
-            onPress: () => router.push(`/habit/add?id=${habit.id}`),
-          },
-          {
-            label: "Arsip",
-            icon: "archive-outline",
-            color: habit.color,
-            onPress: () => void archiveWithCleanup(habit),
-          },
-          {
-            label: "Hapus",
-            icon: "delete-outline",
-            color: colors.danger,
-            onPress: handleDelete,
+      <Animated.View
+        onLayout={(e) => onLayout(e.nativeEvent.layout.height)}
+        style={[
+          styles.dragRow,
+          isDragging && {
+            transform: [{ translateY: dragY }, { scale: 1.03 }],
+            zIndex: 10,
+            elevation: 8,
+            opacity: 0.96,
           },
         ]}
       >
-        <Pressable
-          onPress={onPress}
-          style={[styles.row, { backgroundColor: colors.background }]}
-          android_ripple={{ color: colors.glassBorder }}
-        >
-          <View style={[styles.iconCircle, { backgroundColor: `${habit.color}33` }]}>
-            <MaterialCommunityIcons
-              name={habit.icon as IconName}
-              size={20}
-              color={habit.color}
-            />
-          </View>
-          <View style={styles.rowFlexText}>
-            <Text
-              style={[typography.body, done && styles.doneText]}
-              numberOfLines={1}
-            >
-              {habit.name}
-            </Text>
-            <Text style={typography.caption}>
-              {streak > 0 ? `${streak} hari beruntun` : "Belum ada streak"}
-              {habit.reminderTime ? ` · ${habit.reminderTime}` : ""}
-            </Text>
-          </View>
-          <Pressable
-            onPress={onToggle}
-            hitSlop={10}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: done }}
-            accessibilityLabel={`Tandai ${habit.name} ${done ? "belum selesai" : "sudah selesai"}`}
-            style={[
-              styles.checkbox,
-              done && {
-                backgroundColor: material3.primary,
-                borderColor: material3.primary,
+        <View style={{ flex: 1 }}>
+          <SwipeableRow
+            quickAction={{
+              label: "Arsip",
+              icon: "archive-outline",
+              color: habit.color,
+              onPress: () => void archiveWithCleanup(habit),
+            }}
+            menuActions={[
+              {
+                label: "Edit",
+                icon: "pencil-outline",
+                color: colors.textSecondary,
+                onPress: () => router.push(`/habit/add?id=${habit.id}`),
+              },
+              {
+                label: "Arsip",
+                icon: "archive-outline",
+                color: habit.color,
+                onPress: () => void archiveWithCleanup(habit),
+              },
+              {
+                label: "Hapus",
+                icon: "delete-outline",
+                color: colors.danger,
+                onPress: handleDelete,
               },
             ]}
           >
-            {done && (
-              <Text style={{ color: material3.onPrimary, fontSize: 14 }}>✓</Text>
-            )}
-          </Pressable>
-        </Pressable>
-      </SwipeableRow>
+            <Pressable
+              onPress={onPress}
+              style={[styles.row, { backgroundColor: colors.background }]}
+              android_ripple={{ color: colors.glassBorder }}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: `${habit.color}33` }]}>
+                <MaterialCommunityIcons
+                  name={habit.icon as IconName}
+                  size={20}
+                  color={habit.color}
+                />
+              </View>
+              <View style={styles.rowFlexText}>
+                <Text
+                  style={[typography.body, done && styles.doneText]}
+                  numberOfLines={1}
+                >
+                  {habit.name}
+                </Text>
+                <Text style={typography.caption}>
+                  {streak > 0 ? `${streak} hari beruntun` : "Belum ada streak"}
+                  {habit.reminderTime ? ` · ${habit.reminderTime}` : ""}
+                </Text>
+              </View>
+              <Pressable
+                onPress={onToggle}
+                hitSlop={10}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: done }}
+                accessibilityLabel={`Tandai ${habit.name} ${done ? "belum selesai" : "sudah selesai"}`}
+                style={[
+                  styles.checkbox,
+                  done && {
+                    backgroundColor: material3.primary,
+                    borderColor: material3.primary,
+                  },
+                ]}
+              >
+                {done && (
+                  <Text style={{ color: material3.onPrimary, fontSize: 14 }}>✓</Text>
+                )}
+              </Pressable>
+            </Pressable>
+          </SwipeableRow>
+        </View>
+
+        <View
+          {...dragHandlers}
+          style={styles.dragHandle}
+          hitSlop={8}
+          accessibilityRole="adjustable"
+          accessibilityLabel={`Geser buat urutan ulang ${habit.name}`}
+        >
+          <MaterialCommunityIcons name="drag-vertical" size={22} color={colors.textSecondary} />
+        </View>
+      </Animated.View>
 
       <AppAlert
         visible={alertState.visible}
@@ -427,6 +498,16 @@ function createStyles(
       gap: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: m3Shape.small,
+    },
+    dragRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    dragHandle: {
+      width: 32,
+      height: 40,
+      alignItems: "center",
+      justifyContent: "center",
     },
     rowFlexText: {
       flex: 1,

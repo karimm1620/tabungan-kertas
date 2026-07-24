@@ -9,6 +9,7 @@ export interface Goal {
   emoji?: string;
   accent: AccentKey;
   createdAt: number;
+  sortOrder: number;
 }
 
 export type TransactionType = 'deposit' | 'withdrawal';
@@ -53,6 +54,7 @@ export interface Habit {
   bestStreak: number;
   createdAt: number;
   archivedAt: number | null;
+  sortOrder: number;
 }
 
 export interface HabitLog {
@@ -85,4 +87,3 @@ export interface CreateTodoInput {
   title: string;
   date: string;
 }
-

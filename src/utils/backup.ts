@@ -203,9 +203,9 @@ export async function restoreFromBackup(payload: BackupPayload): Promise<void> {
 
     for (const g of data.savingsGoals) {
       await db.runAsync(
-        `INSERT INTO savings_goals (id, name, target_amount, current_amount, image_uri, emoji, accent, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [g.id, g.name, g.targetAmount, g.currentAmount, g.imageUri ?? null, g.emoji ?? null, g.accent, g.createdAt],
+        `INSERT INTO savings_goals (id, name, target_amount, current_amount, image_uri, emoji, accent, created_at, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [g.id, g.name, g.targetAmount, g.currentAmount, g.imageUri ?? null, g.emoji ?? null, g.accent, g.createdAt, g.sortOrder],
       );
     }
     for (const t of data.savingsTransactions) {
@@ -217,8 +217,8 @@ export async function restoreFromBackup(payload: BackupPayload): Promise<void> {
     for (const h of data.habits) {
       await db.runAsync(
         `INSERT INTO habits
-          (id, name, icon, color, frequency_type, weekdays_mask, reminder_time, notification_id, best_streak, created_at, archived_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, name, icon, color, frequency_type, weekdays_mask, reminder_time, notification_id, best_streak, created_at, archived_at, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           h.id,
           h.name,
@@ -235,6 +235,7 @@ export async function restoreFromBackup(payload: BackupPayload): Promise<void> {
           h.bestStreak,
           h.createdAt,
           h.archivedAt,
+          h.sortOrder,
         ],
       );
     }

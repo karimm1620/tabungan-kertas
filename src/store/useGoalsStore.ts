@@ -24,6 +24,7 @@ export interface GoalRow {
   emoji: string | null;
   accent: Goal["accent"];
   created_at: number;
+  sort_order: number;
 }
 
 export interface TxRow {
@@ -45,6 +46,7 @@ export function rowToGoal(row: GoalRow): Goal {
     emoji: row.emoji ?? undefined,
     accent: row.accent,
     createdAt: row.created_at,
+    sortOrder: row.sort_order,
   };
 }
 
@@ -80,6 +82,8 @@ interface GoalsState {
   ) => Promise<{ ok: boolean; error?: string }>;
 
   getGoalById: (id: string) => Goal | undefined;
+  /** Persist urutan baru hasil drag-reorder — bulk update sort_order = index. */
+  reorderGoals: (newOrder: Goal[]) => Promise<void>;
 }
 
 /**
@@ -99,7 +103,7 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
     const db = await getDb();
     const [goalRows, txRows, pendingRow] = await Promise.all([
       db.getAllAsync<GoalRow>(
-        "SELECT * FROM savings_goals ORDER BY created_at DESC",
+        "SELECT * FROM savings_goals ORDER BY sort_order ASC",
       ),
       db.getAllAsync<TxRow>(
         "SELECT * FROM savings_tx ORDER BY created_at DESC",
@@ -139,6 +143,7 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
 
   addGoal: async (input) => {
     const id = generateId("goal");
+    const existingOrders = get().goals.map((g) => g.sortOrder);
     const newGoal: Goal = {
       id,
       name: input.name.trim(),
@@ -148,13 +153,14 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
       emoji: input.imageUri ? undefined : input.emoji || "🎯",
       accent: pickAccentKey(id),
       createdAt: Date.now(),
+      sortOrder: existingOrders.length > 0 ? Math.min(...existingOrders) - 1 : 0,
     };
 
     const db = await getDb();
     await db.runAsync(
       `INSERT INTO savings_goals
-        (id, name, target_amount, current_amount, image_uri, emoji, accent, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, name, target_amount, current_amount, image_uri, emoji, accent, created_at, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         newGoal.id,
         newGoal.name,
@@ -164,6 +170,7 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
         newGoal.emoji ?? null,
         newGoal.accent,
         newGoal.createdAt,
+        newGoal.sortOrder,
       ],
     );
 
@@ -251,8 +258,8 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
     await db.withTransactionAsync(async () => {
       await db.runAsync(
         `INSERT INTO savings_goals
-          (id, name, target_amount, current_amount, image_uri, emoji, accent, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          (id, name, target_amount, current_amount, image_uri, emoji, accent, created_at, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           pending.goal.id,
           pending.goal.name,
@@ -262,6 +269,7 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
           pending.goal.emoji ?? null,
           pending.goal.accent,
           pending.goal.createdAt,
+          pending.goal.sortOrder,
         ],
       );
       for (const t of pending.transactions) {
@@ -373,4 +381,19 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
   },
 
   getGoalById: (id) => get().goals.find((g) => g.id === id),
+
+  reorderGoals: async (newOrder) => {
+    const db = await getDb();
+    await db.withTransactionAsync(async () => {
+      for (let i = 0; i < newOrder.length; i++) {
+        await db.runAsync("UPDATE savings_goals SET sort_order = ? WHERE id = ?", [
+          i,
+          newOrder[i].id,
+        ]);
+      }
+    });
+    set({
+      goals: newOrder.map((g, i) => ({ ...g, sortOrder: i })),
+    });
+  },
 }));
